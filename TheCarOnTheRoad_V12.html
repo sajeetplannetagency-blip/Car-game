@@ -1979,23 +1979,23 @@ function updateTaxi(dt){
 }
 
 function startRace(){
-  // ── STRAIGHT LINE RACE on highway ──
-  // Start: x=2200, finish: x=7050 (full highway length)
-  const GRID_X=2200, GRID_Y=1200;
-  P.x=GRID_X; P.y=GRID_Y; P.a=0; P.spd=0; P.vx=0; P.vy=0;
-  CAM.angle=0;
+  // ── STRAIGHT LINE RACE on highway (facing EAST = Math.PI/2) ──
+  const GRID_X=2300, GRID_Y=1200;
+  P.x=GRID_X; P.y=GRID_Y; P.a=Math.PI/2; P.spd=0; P.vx=0; P.vy=0;
+  CAM.angle=0; // camera stays top-down, car rotation handles direction
   RACEAI=[];
-  // AI behind player in staggered rows (y offset, x offset behind start)
+  // Grid: 2 columns side by side in Y, rows behind in X
+  // Row 1 (just behind player): dx=-55, Row 2: dx=-110, Row 3: dx=-165
   const aiSlots=[
-    {dx:-45,dy:-22},{dx:-45,dy:22},
-    {dx:-90,dy:-22},{dx:-90,dy:22},
-    {dx:-135,dy:0}
+    {dx:-80, dy:-52},{dx:-80, dy:52},   // row 1 — 80px behind player, 52px side gap
+    {dx:-160,dy:-52},{dx:-160,dy:52},   // row 2 — 160px behind
+    {dx:-240,dy:0}                      // row 3 — 240px behind, center
   ];
   for(let i=0;i<5;i++){
     RACEAI.push({
       x:GRID_X + aiSlots[i].dx,
       y:GRID_Y + aiSlots[i].dy,
-      a:0, spd:0,
+      a:Math.PI/2, spd:0,
       ts:1.8+Math.random()*1.0,
       col:['#FF2D55','#00C8FF','#FFD700','#00FF9D','#FF6B00'][i],
       w:16,h:30,fin:false,ci:0
