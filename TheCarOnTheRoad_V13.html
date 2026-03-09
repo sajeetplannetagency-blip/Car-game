@@ -492,7 +492,7 @@ canvas#gc{
 
 <!-- GAME UI -->
 <div id="gui">
-  <div id="mm2"><canvas id="mmc" width="105" height="105"></canvas><div class="mmlbl">MAP</div></div>
+  <div id="mm2" onclick="openFullMap()" style="cursor:pointer;" title="Open Map"><canvas id="mmc" width="105" height="105"></canvas><div class="mmlbl" style="background:rgba(0,0,0,.5);font-size:8px;letter-spacing:2px;text-align:center;color:rgba(0,200,255,.7);padding:1px 0;">🗺 MAP</div></div>
   <div id="mhud"><div id="mhudT">TAXI JOB</div><div id="mhudI">Drive to pickup</div><div id="tipTimerHUD" style="font-size:10px;color:#00ff9d;font-family:Orbitron,monospace;"></div><button onclick="leaveTaxiJob()" style="margin-top:5px;background:rgba(255,40,40,.2);border:1px solid rgba(255,60,60,.4);color:#ff6060;font-size:9px;font-family:Orbitron,monospace;padding:3px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px;">✕ LEAVE JOB</button></div>
   <!-- TAXI RADIO — only shows during taxi mission -->
   <div id="radioBar" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
@@ -613,7 +613,7 @@ canvas#gc{
   <div id="kh">W A S D · SHIFT=Boost · H=Horn · P=Pause</div>
 
   <!-- COIN HUD -->
-  <div id="coinHUD" style="position:absolute;top:14px;right:14px;display:none;font-family:Orbitron,monospace;font-size:13px;color:#ffd700;background:rgba(0,0,0,.6);border:1px solid rgba(255,215,0,.3);border-radius:4px;padding:4px 10px;z-index:30;letter-spacing:1px;pointer-events:none;">🪙 0</div>
+  <div id="coinHUD" style="position:absolute;top:14px;left:50%;transform:translateX(-50%);display:none;font-family:Orbitron,monospace;font-size:13px;color:#ffd700;background:rgba(0,0,0,.7);border:1px solid rgba(255,215,0,.28);border-radius:20px;padding:4px 14px;z-index:30;letter-spacing:2px;pointer-events:none;white-space:nowrap;">🪙 0</div>
 
   <!-- ZONE ENTRY GTA style -->
   <div id="zoneEntry" style="position:absolute;bottom:22%;right:0;z-index:35;pointer-events:none;transform:translateX(110%);transition:transform .5s cubic-bezier(.16,1,.3,1);">
@@ -721,15 +721,18 @@ function loadGame(){
 function updateCoinHUD(){
   const el=document.getElementById('coinHUD');
   if(el) el.textContent='🪙 '+COINS;
+  const gcd=document.getElementById('garageCoinDisp');
+  if(gcd) gcd.textContent='🪙 Coins: '+COINS;
 }
 function addCoins(n){
+  const prev=COINS;
   COINS+=n;
   updateCoinHUD();
-  // Check unlock notifications
-  if(COINS>=50&&!UNLOCKED.hyundai){
+  // Only notify when threshold is FIRST crossed
+  if(prev<50&&COINS>=50&&!UNLOCKED.hyundai){
     showUnlockNotif('🚙 HYUNDAI SPORTS UNLOCKED!','Go to Garage to buy for 50 coins','#FF2D55');
   }
-  if(COINS>=100&&!UNLOCKED.lambo){
+  if(prev<100&&COINS>=100&&!UNLOCKED.lambo){
     showUnlockNotif('🏎️ LAMBORGHINI AVAILABLE!','You have 100+ coins — Buy in Garage!','#FFD700');
   }
 }
@@ -1471,7 +1474,20 @@ function goMenu(){
   const sbtn=document.getElementById('saveBtn');
   if(chud) chud.style.display='none';
   if(sbtn) sbtn.style.display='none';
+  // Cleanup any active mission UI
+  const mhud=document.getElementById('mhud');
+  const rbar=document.getElementById('radioBar');
+  const rhud=document.getElementById('rhud');
+  const tipEl=document.getElementById('tipTimerHUD');
+  if(mhud) mhud.style.display='none';
+  if(rbar) rbar.style.display='none';
+  if(rhud) rhud.style.display='none';
+  if(tipEl) tipEl.textContent='';
+  // Hide zone entry
+  const ze=document.getElementById('zoneEntry');
+  if(ze) ze.classList.remove('ze_in');
   paused=false;GS='menu';aMission=null;AIVC=[];RACEAI=[];
+  zone_prev=''; // reset so zone music triggers fresh next game
   if(eOsc){try{eOsc.stop();}catch(e){} eOsc=null;}
   stopMusic();
   gpsClear();
@@ -1617,9 +1633,36 @@ function setupCtrl(){
       if(Math.abs(stAmt)<0.01){stAmt=0;if(el)el.style.transform='rotate(0deg)';clearInterval(returnInterval);}
     },16);
   };
-  sw.addEventListener('touchstart',e=>{e.preventDefault();ws(e.touches[0].clientX);},{passive:false});
-  sw.addEventListener('touchmove',e=>{e.preventDefault();wm(e.touches[0].clientX);},{passive:false});
-  sw.addEventListener('touchend',e=>{e.preventDefault();we();},{passive:false});
+  let _swTouchId=-1; // track which finger owns the steering
+  sw.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    e.stopPropagation(); // don't let gui also process this touch
+    // Only claim first touch on steering wheel
+    if(_swTouchId===-1){
+      const t=e.changedTouches[0];
+      _swTouchId=t.identifier;
+      ws(t.clientX);
+    }
+  },{passive:false});
+  sw.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    for(let i=0;i<e.changedTouches.length;i++){
+      if(e.changedTouches[i].identifier===_swTouchId){
+        wm(e.changedTouches[i].clientX); break;
+      }
+    }
+  },{passive:false});
+  sw.addEventListener('touchend',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    for(let i=0;i<e.changedTouches.length;i++){
+      if(e.changedTouches[i].identifier===_swTouchId){
+        _swTouchId=-1; we(); break;
+      }
+    }
+  },{passive:false});
+  sw.addEventListener('touchcancel',e=>{_swTouchId=-1;we();},{passive:false});
   sw.addEventListener('mousedown',e=>ws(e.clientX));
   window.addEventListener('mousemove',e=>{if(wDrag)wm(e.clientX);});
   window.addEventListener('mouseup',()=>{if(wDrag)we();});
@@ -2087,7 +2130,8 @@ function showChat(icon, name, msg, cb){
 function startTaxi(){
   const pu=PKUPS[Math.floor(Math.random()*PKUPS.length)];
   let dr=DRPS[Math.floor(Math.random()*DRPS.length)];
-  while(dr.lb===pu.lb) dr=DRPS[Math.floor(Math.random()*DRPS.length)];
+  let _tries=0;
+  while(dr.lb===pu.lb&&_tries++<20) dr=DRPS[Math.floor(Math.random()*DRPS.length)];
   const dist=Math.hypot(pu.x-dr.x,pu.y-dr.y);
   // Coins: 5 min, 25 max based on distance (tip adds up to 3)
   const baseCoins=Math.max(5,Math.min(25,Math.round(dist/220)));
@@ -2176,6 +2220,7 @@ function startRace(){
   // ── STRAIGHT LINE RACE on highway (facing EAST = Math.PI/2) ──
   const GRID_X=2300, GRID_Y=1200;
   P.x=GRID_X; P.y=GRID_Y; P.a=Math.PI/2; P.spd=0; P.vx=0; P.vy=0;
+  P.bodyRoll=0; P.driftAngle=0; P.lateralVel=0; P.suspBounce=0; P.wheelSpin=0;
   CAM.angle=0; // camera stays top-down, car rotation handles direction
   RACEAI=[];
   // Grid: 2 columns side by side in Y, rows behind in X
@@ -3114,9 +3159,9 @@ function drawPlayer(){
 
 function drawMinimap(){
   const mW=105,mH=105,sx=mW/WW,sy=mH/WH;
-  mmx.fillStyle='#020810';mmx.fillRect(0,0,mW,mH);
+  // Vibrant ground - green like gameplay
+  mmx.fillStyle='#0a1a08';mmx.fillRect(0,0,mW,mH);
 
-  // Rotate minimap to match camera
   mmx.save();
   mmx.translate(mW/2, mH/2);
   mmx.rotate(-CAM.angle);
@@ -3124,9 +3169,31 @@ function drawMinimap(){
 
   ROADS.forEach(r=>{
     if(r.t==='divider')return;
-    if(r.t==='river'){ mmx.fillStyle='#071828'; mmx.fillRect(r.x*sx,r.y*sy,r.w*sx,r.h*sy); return; }
-    mmx.fillStyle=r.t==='highway'?'#1c2e40':r.t==='bridge'?'#1a2c3e':'#101e2c';
+    if(r.t==='curve'){
+      if(!r.pts||r.pts.length<2) return;
+      mmx.strokeStyle='#2a4060';mmx.lineWidth=Math.max(1,r.w*sx*1.2);
+      mmx.lineCap='round';mmx.lineJoin='round';
+      mmx.beginPath();mmx.moveTo(r.pts[0].x*sx,r.pts[0].y*sy);
+      r.pts.forEach(p=>mmx.lineTo(p.x*sx,p.y*sy));mmx.stroke();
+      return;
+    }
+    if(r.t==='river'){ 
+      mmx.fillStyle='#0a2848'; 
+      mmx.fillRect(r.x*sx,r.y*sy,Math.max(r.w*sx,1),Math.max(r.h*sy,1)); return; 
+    }
+    if(r.t==='bridge') mmx.fillStyle='#1e3c58';
+    else if(r.t==='main') mmx.fillStyle='#243650';
+    else mmx.fillStyle='#182c40';
     mmx.fillRect(r.x*sx,r.y*sy,Math.max(r.w*sx,1),Math.max(r.h*sy,1));
+  });
+  
+  // Buildings — color-coded by x position (zone)
+  BLDS.forEach(b=>{
+    const bx=b.x*sx,by=b.y*sy,bw=Math.max(b.w*sx,1),bh=Math.max(b.h*sy,1);
+    if(b.x>7680) mmx.fillStyle='#2a1040';        // City: purple-ish
+    else if(b.x>2082) mmx.fillStyle='#1c2030';   // Highway area
+    else mmx.fillStyle='#1a2818';                  // Neighborhood: greenish
+    mmx.fillRect(bx,by,bw,bh);
   });
   const mp=Math.sin(Date.now()*.005)*.3+.7;
   MRKRS.forEach(m=>{mmx.fillStyle=`rgba(255,107,0,${mp})`;mmx.beginPath();mmx.arc(m.x*sx,m.y*sy,3.5,0,Math.PI*2);mmx.fill();});
@@ -3205,6 +3272,10 @@ function createReverb(ac, seconds=2.5, decay=2){
   return g;
 }
 
+function openFullMap(){
+  if(GS==='playing') openMap();
+  else if(GS==='mapview') closeMap();
+}
 function openMap(){
   if(GS!=='playing') return;
   GS='mapview';
@@ -4079,7 +4150,7 @@ function startCityMusic(){
   const mg=AC.createGain();
   mg.gain.setValueAtTime(0,t); mg.gain.linearRampToValueAtTime(vol,t+2.5);
   mg.connect(_audioOut||AC.destination);
-  MUS.masterGain=mg; MUS.playing=true;
+  MUS.masterGain=mg; MUS.playing=true; MUS.step=0; MUS._nextBeatTime=AC.currentTime+0.05;
   // Synthwave city beat — faster, brighter
   const BPM=128, beat=60/BPM;
   const notes=[523,659,784,1047,784,659,784,880,1047,880,784,659];
@@ -4261,7 +4332,7 @@ function startMenuMusic(){
   menuMus.playing=true;
   const t=AC.currentTime, vol=S.musicVol*.45;
   const mg=AC.createGain(); mg.gain.setValueAtTime(0,t); mg.gain.linearRampToValueAtTime(vol,t+3);
-  mg.connect(AC.destination); menuMus.nodes.mg=mg;
+  mg.connect(_audioOut||AC.destination); menuMus.nodes.mg=mg;
   // Slow ambient drones — different from gameplay (longer notes, more ethereal)
   [[110,.04],[138.6,.025],[165,.02],[220,.015]].forEach(([hz,v],i)=>{
     const o=AC.createOscillator(), g=AC.createGain(), f=AC.createBiquadFilter();
@@ -4436,6 +4507,7 @@ function startMusic(){
   MUS.step=0;
   MUS.bpm=128;
   MUS.beatLen=60/MUS.bpm/4; // 16th note
+  MUS._nextBeatTime=AC.currentTime+0.05; // lookahead start
   MUS.masterGain=AC.createGain();
   MUS.masterGain.gain.setValueAtTime(0,AC.currentTime);
   MUS.masterGain.gain.linearRampToValueAtTime(S.musicVol*.7,AC.currentTime+2);
@@ -4445,94 +4517,102 @@ function startMusic(){
 
 function scheduleBeat(){
   if(!MUS.playing||MUS._paused) return;
-  const t=AC.currentTime;
-  const bl=MUS.beatLen;
-  const step=MUS.step%16; // 16-step sequencer
+  // ── LOOKAHEAD SCHEDULER: schedules ahead to prevent timing drift ──
+  const LOOKAHEAD=0.12; // seconds ahead
+  const SCHED_INT=50;   // ms interval
+  while(MUS._nextBeatTime < AC.currentTime + LOOKAHEAD){
+    const t=MUS._nextBeatTime;
+    const bl=MUS.beatLen;
+    const step=MUS.step%16;
 
-  // ── KICK: steps 0, 8 ──
-  if(step===0||step===8){
-    const o=AC.createOscillator(),g=AC.createGain();
-    o.type='sine';
-    o.frequency.setValueAtTime(160,t);
-    o.frequency.exponentialRampToValueAtTime(40,t+0.12);
-    g.gain.setValueAtTime(0.85,t);
-    g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
-    o.connect(g);g.connect(MUS.masterGain);
-    o.start(t);o.stop(t+0.2);
-  }
-
-  // ── SNARE: steps 4, 12 ──
-  if(step===4||step===12){
-    const buf=AC.createBuffer(1,AC.sampleRate*.12,AC.sampleRate);
-    const d=buf.getChannelData(0);
-    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2.2);
-    const src=AC.createBufferSource(),g=AC.createGain();
-    const flt=AC.createBiquadFilter();flt.type='bandpass';flt.frequency.value=2400;flt.Q.value=0.7;
-    src.buffer=buf;g.gain.value=0.22;
-    src.connect(flt);flt.connect(g);g.connect(MUS.masterGain);src.start(t);
-  }
-
-  // ── HI-HAT: every 2 steps ──
-  if(step%2===0){
-    const buf=AC.createBuffer(1,AC.sampleRate*.035,AC.sampleRate);
-    const d=buf.getChannelData(0);
-    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,4);
-    const src=AC.createBufferSource(),g=AC.createGain();
-    const flt=AC.createBiquadFilter();flt.type='highpass';flt.frequency.value=9000;
-    src.buffer=buf;g.gain.value=step%4===0?0.12:0.07;
-    src.connect(flt);flt.connect(g);g.connect(MUS.masterGain);src.start(t);
-  }
-
-  // ── BASS LINE: funky walking bass ──
-  const bassLine=[110,110,0,110,138,0,110,0,82,0,110,0,98,0,110,0];
-  const bassVel= [1,.7,0,.8,1, 0,.75,0,1, 0,.8, 0,.7, 0,.85,0];
-  if(bassLine[step]>0){
-    const o=AC.createOscillator(),g=AC.createGain();
-    o.type='sawtooth';
-    const flt=AC.createBiquadFilter();flt.type='lowpass';flt.frequency.value=380;flt.Q.value=1.5;
-    o.frequency.value=bassLine[step];
-    g.gain.setValueAtTime(0.38*bassVel[step],t);
-    g.gain.exponentialRampToValueAtTime(0.001,t+bl*1.8);
-    o.connect(flt);flt.connect(g);g.connect(MUS.masterGain);
-    o.start(t);o.stop(t+bl*2);
-  }
-
-  // ── MELODY: bright chip tune lead ──
-  // 2-bar melody pattern (32 steps), pentatonic
-  const mel=[
-    523,0,659,0,784,0,659,523, 0,440,523,0,659,0,523,0,
-    440,0,523,659,0,784,880,0, 784,659,0,523,440,0,392,0
-  ];
-  const melStep=MUS.step%32;
-  if(mel[melStep]>0){
-    const o=AC.createOscillator(),g=AC.createGain();
-    o.type='square';
-    const flt=AC.createBiquadFilter();flt.type='lowpass';flt.frequency.value=2200;
-    o.frequency.value=mel[melStep];
-    g.gain.setValueAtTime(0.18,t);
-    g.gain.exponentialRampToValueAtTime(0.001,t+bl*1.5);
-    o.connect(flt);flt.connect(g);g.connect(MUS.masterGain);
-    o.start(t);o.stop(t+bl*1.6);
-  }
-
-  // ── CHORD PAD: every 4 steps ──
-  if(step%4===0){
-    const chords=[[261,329,392],[220,277,330],[174,220,261],[196,247,294]];
-    const ci=Math.floor(MUS.step/16)%chords.length;
-    chords[ci].forEach(freq=>{
+    // ── KICK ──
+    if(step===0||step===8){
       const o=AC.createOscillator(),g=AC.createGain();
-      o.type='triangle';
-      o.frequency.value=freq;
-      g.gain.setValueAtTime(0.06,t);
-      g.gain.linearRampToValueAtTime(0.09,t+bl*1.5);
-      g.gain.exponentialRampToValueAtTime(0.001,t+bl*4.2);
+      o.type='sine';
+      o.frequency.setValueAtTime(180,t);
+      o.frequency.exponentialRampToValueAtTime(38,t+0.14);
+      g.gain.setValueAtTime(0.9,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.20);
       o.connect(g);g.connect(MUS.masterGain);
-      o.start(t);o.stop(t+bl*4.5);
-    });
-  }
+      o.start(t);o.stop(t+0.22);
+    }
 
-  MUS.step++;
-  MUS._beatTimer=setTimeout(scheduleBeat, bl*980); // 980ms not 1000ms = slight swing
+    // ── SNARE: electronic clap sound ──
+    if(step===4||step===12){
+      const buf=AC.createBuffer(1,Math.floor(AC.sampleRate*.09),AC.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/d.length*9);
+      const src=AC.createBufferSource(),g=AC.createGain();
+      const f=AC.createBiquadFilter();f.type='bandpass';f.frequency.value=3200;f.Q.value=0.5;
+      src.buffer=buf;g.gain.value=0.28;
+      src.connect(f);f.connect(g);g.connect(MUS.masterGain);src.start(t);
+    }
+
+    // ── HI-HAT: tight electronic ──
+    if(step%2===0){
+      const buf=AC.createBuffer(1,Math.floor(AC.sampleRate*.025),AC.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,5);
+      const src=AC.createBufferSource(),g=AC.createGain();
+      const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=10000;
+      src.buffer=buf;g.gain.value=step%4===0?0.14:0.07;
+      src.connect(f);f.connect(g);g.connect(MUS.masterGain);src.start(t);
+    }
+
+    // ── BASS LINE: deep synth bass (sawtooth + heavy lowpass) ──
+    const bassLine=[55,0,55,0, 65,0,55,0, 49,0,55,0, 58,0,55,0];
+    if(bassLine[step]>0){
+      const o=AC.createOscillator(),g=AC.createGain();
+      const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.setValueAtTime(320,t);f.frequency.exponentialRampToValueAtTime(120,t+bl*1.6);f.Q.value=4;
+      o.type='sawtooth';o.frequency.value=bassLine[step];
+      g.gain.setValueAtTime(0.55,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+bl*1.9);
+      o.connect(f);f.connect(g);g.connect(MUS.masterGain);
+      o.start(t);o.stop(t+bl*2);
+    }
+
+    // ── SYNTH LEAD: smooth sawtooth, NOT square/chip ──
+    // Electronic/synthwave feel — no Mario!
+    const lead=[
+      220,0,0,261, 0,0,220,0,  196,0,0,220, 0,0,174,0,
+      220,0,0,246, 0,0,261,0,  220,0,196,0, 174,0,0,0
+    ];
+    const ls=MUS.step%32;
+    if(lead[ls]>0){
+      const o=AC.createOscillator(),g=AC.createGain();
+      const f=AC.createBiquadFilter();f.type='lowpass';
+      f.frequency.setValueAtTime(1800,t);f.frequency.exponentialRampToValueAtTime(400,t+bl*2.5);f.Q.value=2;
+      o.type='sawtooth';o.frequency.value=lead[ls];
+      // Subtle vibrato
+      const lfo=AC.createOscillator(),lfog=AC.createGain();
+      lfo.frequency.value=5.2;lfog.gain.value=3;
+      lfo.connect(lfog);lfog.connect(o.frequency);
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.22,t+0.015);
+      g.gain.exponentialRampToValueAtTime(0.001,t+bl*2.8);
+      o.connect(f);f.connect(g);g.connect(MUS.masterGain);
+      o.start(t);lfo.start(t);o.stop(t+bl*3);lfo.stop(t+bl*3);
+    }
+
+    // ── CHORD PAD: lush synth pads every 4 steps ──
+    if(step%4===0){
+      const pads=[[110,138,165],[98,123,147],[87,110,131],[92,116,138]];
+      const ci=Math.floor(MUS.step/16)%pads.length;
+      pads[ci].forEach(freq=>{
+        const o=AC.createOscillator(),g=AC.createGain();
+        o.type='triangle';o.frequency.value=freq;
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(0.055,t+bl*0.8);
+        g.gain.exponentialRampToValueAtTime(0.001,t+bl*4.5);
+        o.connect(g);g.connect(MUS.masterGain);
+        o.start(t);o.stop(t+bl*5);
+      });
+    }
+
+    MUS.step++;
+    MUS._nextBeatTime+=bl;
+  }
+  MUS._beatTimer=setTimeout(scheduleBeat, SCHED_INT);
 }
 
 
@@ -4599,6 +4679,53 @@ function loop(ts){
   requestAnimationFrame(loop);
 }
 
+
+// ── STATS + MISC ──
+function openStats(){
+  const sc=document.getElementById('statsScreen');
+  if(!sc) return;
+  sc.style.display='flex';
+  let html=`
+    <div class="stat_row"><span>🪙 Total Coins</span><span style="color:#ffd700">${COINS}</span></div>
+    <div class="stat_row"><span>🚖 Taxi Jobs</span><span>${STATS.taxiJobs}</span></div>
+    <div class="stat_row"><span>❌ Taxi Fails</span><span style="color:#ff4466">${STATS.taxiFails}</span></div>
+    <div class="stat_row"><span>💰 Taxi Coins</span><span style="color:#ffd700">${STATS.taxiCoins}</span></div>
+    <div class="stat_row"><span>🏆 Race Wins</span><span style="color:#00ff9d">${STATS.raceWins}</span></div>
+    <div style="color:#00c8ff;font-size:10px;letter-spacing:2px;margin:12px 0 6px;width:100%;max-width:400px;">── RECENT TAXI DRIVES ──</div>`;
+  const recent=STATS.drives.slice(-10).reverse();
+  if(!recent.length) html+='<div style="color:#334;font-size:9px;margin:4px 0;">No drives yet — start a taxi job!</div>';
+  recent.forEach((d,i)=>{
+    const t=d.time?`${Math.floor(d.time/60)}m ${String(d.time%60).padStart(2,'0')}s`:'—';
+    html+=`<div class="stat_drive">
+      <div class="sd_h">${d.fail?'❌':'✅'} ${d.car} — Drive #${STATS.drives.length-i}</div>
+      ${d.from?`From: ${d.from} → ${d.to}<br>`:''}
+      🪙 ${d.coins} coins${d.tip?' <span style="color:#00ff9d">+TIP</span>':''} | ⏱ ${t}${d.dist?` | 📏 ${d.dist}m`:''}
+    </div>`;
+  });
+  html+=`<div style="color:#00c8ff;font-size:10px;letter-spacing:2px;margin:12px 0 6px;width:100%;max-width:400px;">── RECENT RACES ──</div>`;
+  const races=STATS.races.slice(-5).reverse();
+  if(!races.length) html+='<div style="color:#334;font-size:9px;margin:4px 0;">No races yet — find the Race Job marker!</div>';
+  races.forEach((r,i)=>{
+    const t=r.time?`${Math.floor(r.time/60)}m ${String(r.time%60).padStart(2,'0')}s`:'—';
+    const ords=['','1ST 🥇','2ND 🥈','3RD 🥉','4TH','5TH','6TH'];
+    html+=`<div class="stat_drive">
+      <div class="sd_h">${r.pos===1?'🏆':'🏁'} ${r.car} — Race #${STATS.races.length-i}</div>
+      Position: ${ords[Math.min(6,r.pos)]||r.pos} | ⏱ ${t}
+    </div>`;
+  });
+  document.getElementById('statsContent').innerHTML=html;
+}
+
+function closeStats(){
+  const sc=document.getElementById('statsScreen');
+  if(sc) sc.style.display='none';
+}
+
+// scheduleArp stub — called on AC resume, harmless if arps not in use
+function scheduleArp(){
+  // Arpeggios are part of scheduleBeat now — this is a safe no-op stub
+}
+
 // ── INIT ──
 window.addEventListener('load',()=>{resizeCvs();loadGame();document.getElementById('ls').style.display='flex';GS='loading';setTimeout(runLoad,350);});
 document.addEventListener('contextmenu',e=>e.preventDefault());
@@ -4613,7 +4740,12 @@ document.addEventListener('contextmenu',e=>e.preventDefault());
         // Restart gameplay beat chains if they died
         if(GS==='playing'&&MUS.playing&&!MUS._paused){
           clearTimeout(MUS._beatTimer); clearTimeout(MUS._arpTimer);
-          setTimeout(()=>{ if(MUS.playing&&!MUS._paused){ scheduleBeat(); scheduleArp(); } }, 50);
+          setTimeout(()=>{
+            if(MUS.playing&&!MUS._paused){
+              MUS._nextBeatTime=AC.currentTime+0.05; // reset lookahead on resume
+              scheduleBeat();
+            }
+          }, 50);
         }
       });
     }
