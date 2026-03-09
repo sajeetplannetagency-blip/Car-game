@@ -199,7 +199,7 @@ canvas#gc{
 #gui{position:fixed;inset:0;pointer-events:none;z-index:10;display:none;}
 #mm2{position:absolute;top:11px;left:11px;width:105px;height:105px;background:rgba(2,7,15,.92);border:1px solid rgba(0,200,255,.18);border-radius:3px;box-shadow:0 0 18px rgba(0,0,0,.6),inset 0 0 18px rgba(0,200,255,.02);}
 #mmc{width:100%;height:100%;border-radius:2px;}
-.mmlbl{position:absolute;bottom:-15px;left:0;right:0;text-align:center;font-family:'Orbitron',monospace;font-size:6px;color:#1a3048;letter-spacing:2px;}
+
 
 #spdhud{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;}
 #spdn{font-family:'Orbitron',monospace;font-size:40px;font-weight:900;color:#00c8ff;text-shadow:0 0 30px rgba(0,200,255,.6);line-height:1;filter:drop-shadow(0 0 12px rgba(0,200,255,.45));}
@@ -492,7 +492,7 @@ canvas#gc{
 
 <!-- GAME UI -->
 <div id="gui">
-  <div id="mm2" onclick="openFullMap()" style="cursor:pointer;" title="Open Map"><canvas id="mmc" width="105" height="105"></canvas><div class="mmlbl" style="background:rgba(0,0,0,.5);font-size:8px;letter-spacing:2px;text-align:center;color:rgba(0,200,255,.7);padding:1px 0;">🗺 MAP</div></div>
+  <div id="mm2" onclick="openFullMap()" style="cursor:pointer;" title="Open Map"><canvas id="mmc" width="105" height="105"></canvas></div>
   <div id="mhud"><div id="mhudT">TAXI JOB</div><div id="mhudI">Drive to pickup</div><div id="tipTimerHUD" style="font-size:10px;color:#00ff9d;font-family:Orbitron,monospace;"></div><button onclick="leaveTaxiJob()" style="margin-top:5px;background:rgba(255,40,40,.2);border:1px solid rgba(255,60,60,.4);color:#ff6060;font-size:9px;font-family:Orbitron,monospace;padding:3px 8px;border-radius:2px;cursor:pointer;letter-spacing:1px;">✕ LEAVE JOB</button></div>
   <!-- TAXI RADIO — only shows during taxi mission -->
   <div id="radioBar" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
@@ -1731,9 +1731,15 @@ function setupCtrl(){
       const t=e.changedTouches[i];
       const key=touchBtnMap[t.identifier];
       if(key){ K[key]=false; delete touchBtnMap[t.identifier]; }
-      // Horn: check if released on horn button
+      // Detect taps on action buttons (onclick blocked by preventDefault)
       const el=document.elementFromPoint(t.clientX,t.clientY);
-      if(el&&el.closest&&el.closest('#bHrn')) playHorn();
+      if(!el) continue;
+      const cl=el.closest.bind(el);
+      if(cl('#bHrn'))   playHorn();
+      if(cl('#bPause')) { UC(); toggleP(); }
+      if(cl('#bMusic')) { UC(); toggleMusic(); }
+      if(cl('#bLights')){ UC(); toggleLights(); }
+      if(cl('#bMap'))   { UC(); openMap(); }
     }
   },{passive:false});
 
