@@ -940,7 +940,7 @@ const ISO={Y:0.55, Z:0.50, ZX:0.10};
 
 // === GTA VICE CITY PERSPECTIVE CAMERA ===
 // behind=320  height=160  lookFwd=80  focal=360
-const PCAM={behind:420, height:290, lookFwd:90, focal:380};
+const PCAM={behind:200, height:120, lookFwd:500, focal:360};
 let _p3cos=1,_p3sin=0;
 // Pre-computed 3D camera basis (updated every frame by _updateP3)
 const _cam={x:0,y:0,z:0,rX:1,rY:0,fX:0,fY:0,fZ:-1,uX:0,uY:0,uZ:1};
@@ -2493,7 +2493,7 @@ function drawScene(){
   // Project a far ground point to find horizon screen Y
   const _hfX=Math.sin(CAM.angle)*5000, _hfY=-Math.cos(CAM.angle)*5000;
   const _hpt=P3(P.x+_hfX, P.y+_hfY, 0);
-  const horizY=Math.max(-30, Math.min(gc.height*0.55, _hpt[1]));
+  const horizY=Math.max(-30, Math.min(gc.height*0.65, _hpt[1]));
 
   // Ground fill (below horizon) — GTA VC grey-brown
   const _gc=lerpRGB([18,18,14],[52,48,38],_dl);
@@ -2542,7 +2542,7 @@ function drawScene(){
 
   // Depth-sort buildings, trees, lamps, sigs together
   const _allObj=[];
-  const _RD=1800; // render distance
+  const _RD=1400; // render distance
   BLDS.forEach(b=>{
     const cx=b.x+b.w*.5, cy=b.y+b.h*.5;
     const d=(cx-_cam.x)*_cam.fX+(cy-_cam.y)*_cam.fY;
@@ -2837,13 +2837,20 @@ function drawRoad(r){
     if(isH){
       P3fill([[rx,ry,0],[rx+rw,ry,0],[rx+rw,ry,8],[rx,ry,8]],'rgba(68,88,108,.95)');
       P3fill([[rx,ry+rh,0],[rx+rw,ry+rh,0],[rx+rw,ry+rh,8],[rx,ry+rh,8]],'rgba(68,88,108,.95)');
-      // Centre dashes
+      // Centre dashes — P3 perspective (converge in distance like GTA VC)
       for(let lx=rx+22;lx<rx+rw-12;lx+=50){
-        quad('rgba(255,242,18,.75)',lx,ry+rh/2-1.5,32,3);
+        P3fill([[lx,ry+rh/2-2,0],[lx+30,ry+rh/2-2,0],[lx+30,ry+rh/2+2,0],[lx,ry+rh/2+2,0]],'rgba(255,215,0,.85)');
       }
+      // Edge white lines (GTA VC style)
+      P3fill([[rx+2,ry+2,0],[rx+rw-2,ry+2,0],[rx+rw-2,ry+5,0],[rx+2,ry+5,0]],'rgba(255,255,255,.35)');
+      P3fill([[rx+2,ry+rh-5,0],[rx+rw-2,ry+rh-5,0],[rx+rw-2,ry+rh-2,0],[rx+2,ry+rh-2,0]],'rgba(255,255,255,.35)');
     } else {
       P3fill([[rx,ry,0],[rx+4,ry,0],[rx+4,ry+rh,0],[rx,ry+rh,0]],'rgba(68,88,108,.95)');
       P3fill([[rx+rw-4,ry,0],[rx+rw,ry,0],[rx+rw,ry+rh,0],[rx+rw-4,ry+rh,0]],'rgba(68,88,108,.95)');
+      // Vertical centre dashes
+      for(let ly=ry+22;ly<ry+rh-12;ly+=50){
+        P3fill([[rx+rw/2-2,ly,0],[rx+rw/2+2,ly,0],[rx+rw/2+2,ly+30,0],[rx+rw/2-2,ly+30,0]],'rgba(255,215,0,.85)');
+      }
     }
   } else {
     quad('#12202e',rx,ry,rw,rh);
@@ -3510,9 +3517,17 @@ function drawPlayer(){
   const wbA=[C[3][0]+(C[2][0]-C[3][0])*rs, C[3][1]+(C[2][1]-C[3][1])*rs];
   const wbB=[C[3][0]+(C[2][0]-C[3][0])*(1-rs), C[3][1]+(C[2][1]-C[3][1])*(1-rs)];
   P3fill([
-    [...wbA,carH*.38],[...wbB,carH*.38],
-    [...wbB,carH*.82],[...wbA,carH*.82]
-  ],`rgba(80,150,190,${0.28+dl*0.1})`);
+    [...wbA,carH*.42],[...wbB,carH*.42],
+    [...wbB,carH*.86],[...wbA,carH*.86]
+  ],`rgba(60,100,140,${0.55+dl*0.2})`);
+  // Number plate (GTA style)
+  if(S.tex!=='low'){
+    const plCx=(C[3][0]+C[2][0])/2, plCy=(C[3][1]+C[2][1])/2;
+    const pl0x=plCx+(C[3][0]-C[2][0])*0.1, pl0y=plCy+(C[3][1]-C[2][1])*0.1;
+    const pl1x=plCx+(C[2][0]-C[3][0])*0.1, pl1y=plCy+(C[2][1]-C[3][1])*0.1;
+    P3fill([[pl0x,pl0y,carH*.06],[pl1x,pl1y,carH*.06],
+            [pl1x,pl1y,carH*.16],[pl0x,pl0y,carH*.16]],'#d8d0b8');
+  }
 
   // Headlights
   const [hl0x,hl0y]=P3(C[0][0]+(C[1][0]-C[0][0])*.1,C[0][1]+(C[1][1]-C[0][1])*.1,carH*.28);
@@ -3529,12 +3544,24 @@ function drawPlayer(){
     });
   }
 
-  // Tail lights
-  const [tl0x,tl0y]=P3(C[3][0]+(C[2][0]-C[3][0])*.1,C[3][1]+(C[2][1]-C[3][1])*.1,carH*.28);
-  const [tl1x,tl1y]=P3(C[3][0]+(C[2][0]-C[3][0])*.9,C[3][1]+(C[2][1]-C[3][1])*.9,carH*.28);
-  ctx.fillStyle=P.lights?'rgba(255,30,30,.9)':'rgba(180,30,30,.65)';
-  ctx.beginPath();ctx.arc(tl0x,tl0y,3.5,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(tl1x,tl1y,3.5,0,Math.PI*2);ctx.fill();
+  // Tail lights — GTA VC style wide red bars
+  const tlCol=P.lights||P.brake?'rgba(255,20,20,.98)':'rgba(160,20,20,.75)';
+  const tlGlow=P.lights||P.brake?'rgba(255,60,60,.35)':'transparent';
+  // Full-width taillight bar (multiple segments like GTA VC)
+  for(let ti=0;ti<5;ti++){
+    const t0=0.06+ti*0.18, t1=t0+0.14;
+    const tlx0=C[3][0]+(C[2][0]-C[3][0])*t0, tly0=C[3][1]+(C[2][1]-C[3][1])*t0;
+    const tlx1=C[3][0]+(C[2][0]-C[3][0])*t1, tly1=C[3][1]+(C[2][1]-C[3][1])*t1;
+    P3fill([[tlx0,tly0,carH*.18],[tlx1,tly1,carH*.18],
+            [tlx1,tly1,carH*.40],[tlx0,tly0,carH*.40]],tlCol);
+  }
+  // Taillight glow when braking or lights on
+  if((P.lights||K.brake)&&S.shd!=='off'){
+    const [tgx,tgy]=P3(C[3][0]+(C[2][0]-C[3][0])*.5,C[3][1]+(C[2][1]-C[3][1])*.5,carH*.3);
+    const tg=ctx.createRadialGradient(tgx,tgy,0,tgx,tgy,22);
+    tg.addColorStop(0,'rgba(255,20,20,.4)');tg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=tg;ctx.beginPath();ctx.arc(tgx,tgy,22,0,Math.PI*2);ctx.fill();
+  }
 
   // Roof
   P3fill([
@@ -3575,6 +3602,27 @@ function drawPlayer(){
       // Centre cap
       ctx.fillStyle='#788898';
       ctx.beginPath();ctx.ellipse(wsx,wsy,wr*0.16,wr*0.1,0,0,Math.PI*2);ctx.fill();
+    });
+  }
+
+  // ── SPOILER (Lambo + Hyundai style — visible from rear) ──
+  if(P.cfg && P.cfg.name && (P.cfg.name.includes('LAMBO')||P.cfg.name.includes('HYUNDAI'))){
+    const spH=carH+5, spThk=2;
+    const sA=[C[3][0]+(C[2][0]-C[3][0])*.05, C[3][1]+(C[2][1]-C[3][1])*.05];
+    const sB=[C[3][0]+(C[2][0]-C[3][0])*.95, C[3][1]+(C[2][1]-C[3][1])*.95];
+    // Spoiler wing (horizontal bar across rear)
+    P3fill([[...sA,carH*.88],[...sB,carH*.88],[...sB,spH],[...sA,spH]],shade(col,-15));
+    // Spoiler end plates
+    P3fill([[...sA,carH*.72],[...sA,carH*.88],[...sA,spH],...[sA].map(p=>[...p,spH])],'rgba(20,20,20,.9)');
+  }
+  // ── EXHAUST PIPES (visible at rear bumper level) ──
+  if(S.tex!=='low'){
+    const exZ=carH*.08, exW=2.2;
+    [[.2,.25],[.75,.8]].forEach(([t0,t1])=>{
+      const ex0=[C[3][0]+(C[2][0]-C[3][0])*t0, C[3][1]+(C[2][1]-C[3][1])*t0];
+      const ex1=[C[3][0]+(C[2][0]-C[3][0])*t1, C[3][1]+(C[2][1]-C[3][1])*t1];
+      P3fill([[...ex0,0],[...ex1,0],[...ex1,exZ],[...ex0,exZ]],'#080808');
+      P3fill([[...ex0,exZ*.3],[...ex1,exZ*.3],[...ex1,exZ*.8],[...ex0,exZ*.8]],'rgba(80,70,60,.9)');
     });
   }
 
