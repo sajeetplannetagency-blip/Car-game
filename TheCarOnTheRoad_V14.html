@@ -940,7 +940,7 @@ const ISO={Y:0.55, Z:0.50, ZX:0.10};
 
 // === GTA VICE CITY PERSPECTIVE CAMERA ===
 // behind=320  height=160  lookFwd=80  focal=360
-const PCAM={behind:560, height:310, lookFwd:320, focal:430};
+const PCAM={behind:420, height:290, lookFwd:90, focal:380};
 let _p3cos=1,_p3sin=0;
 // Pre-computed 3D camera basis (updated every frame by _updateP3)
 const _cam={x:0,y:0,z:0,rX:1,rY:0,fX:0,fY:0,fZ:-1,uX:0,uY:0,uZ:1};
@@ -969,7 +969,7 @@ function _updateP3(angle){
 // Project world (wx,wy,wz) → screen [sx,sy]
 // MUST be called inside a drawScene frame (uses CAM.x,CAM.y,gc size)
 // Fog density (0=clear, 1=full fog) for distance d
-function P3fog(d){ return Math.min(1, Math.max(0,(d-280)/1600)); }
+function P3fog(d){ return Math.min(1, Math.max(0,(d-400)/1800)); }
 
 function P3(wx,wy,wz=0){
   // ── True perspective projection (GTA Vice City style) ──
@@ -1146,8 +1146,8 @@ function buildWorld(){
 
   // ── BUILDINGS ──
   // GTA1/Mario style bright building colors
-  const BC=['#c43b2a','#d4822a','#3a7ac4','#2a9e4f','#9b3fc4','#c4b02a','#2ab8c4','#c4422a','#7a5ac4','#e86c2a'];
-  const RC=['#8a2218','#8a5218','#245a8a','#1a6e34','#6a2a8a','#7a6a18','#1a7a8a','#8a2c18','#4a3a8a','#9a4818'];
+  const BC=['#d4856a','#c4a882','#7ab8d4','#a8c478','#d4a8d4','#d4c87a','#7ad4c4','#d47882','#a48ad4','#d4b87a']; // GTA VC Miami pastels
+  const RC=['#a86050','#a87850','#5088a0','#789058','#9070a0','#9a9850','#509a90','#a05868','#7860a0','#a08850']; // GTA VC muted roofs
 
   // Block helper: fill a rectangle block with buildings
   // bx,by = block top-left, bw,bh = block size, cols = num cols, rows = num rows
@@ -1177,7 +1177,7 @@ function buildWorld(){
     [3220,790,128,148],[3520,790,96,180],[3825,790,115,158],[4130,790,138,142],[4440,790,100,170],
     [2120,1435,128,132],[2420,1435,105,150],[2728,1435,95,128],[3025,1435,120,138],[3350,1435,88,115],
   ];
-  HWB.forEach((b,i)=>BLDS.push({x:b[0],y:b[1],w:b[2],h:b[3],col:BC[i%BC.length],roof:RC[i%RC.length],bh:Math.max(85,Math.min(240,(b[2]+b[3])*0.95+Math.sin(b[0]*0.007+b[1]*0.011)*60))}));
+  HWB.forEach((b,i)=>BLDS.push({x:b[0],y:b[1],w:b[2],h:b[3],col:BC[i%BC.length],roof:RC[i%RC.length],bh:Math.max(50,Math.min(110,(b[2]+b[3])*0.52+Math.sin(b[0]*0.007+b[1]*0.011)*22))}));
 
   // Fill all neighborhood blocks
   let bldIdx=0;
@@ -1190,7 +1190,7 @@ function buildWorld(){
       const rows = bh>200 ? 2 : 1;
       makeBlock(bx,by,bw,bh,cols,rows).forEach(b=>{
         BLDS.push({x:b[0],y:b[1],w:b[2],h:b[3],
-          col:BC[bldIdx%BC.length],roof:RC[bldIdx%RC.length],bh:Math.max(80,Math.min(220,(b[2]+b[3])*0.9+Math.sin(b[0]*0.009+b[1]*0.013)*55))}); 
+          col:BC[bldIdx%BC.length],roof:RC[bldIdx%RC.length],bh:Math.max(45,Math.min(100,(b[2]+b[3])*0.48+Math.sin(b[0]*0.009+b[1]*0.013)*20))}); 
         bldIdx++;
       });
     });
@@ -1297,7 +1297,7 @@ function buildWorld(){
 
   // New city buildings — 4 rows, dense urban grid
   // City buildings - glass + concrete bright colors
-  const NBC=['#1e4a8a','#8a3a1e','#1e7a3a','#8a6a1e','#5a1e8a','#1e6a7a','#8a1e4a','#3a7a1e'];
+  const NBC=['#6898c8','#c87848','#68b888','#c8a848','#9868c8','#68a8b8','#c86888','#88b868']; // City bright
   const NRC=['#12307a','#6a2810','#12602a','#6a5010','#421270','#126070','#6a1230','#287a12'];
 
   // Row 1 — North of upper blvd (y:620–860)
@@ -1330,7 +1330,7 @@ function buildWorld(){
   ];
 
   [...NB1,...NB2,...NB3,...NB4].forEach((b,i)=>{
-    BLDS.push({x:b[0],y:b[1],w:b[2],h:b[3],col:NBC[i%NBC.length],roof:NRC[i%NRC.length],bh:Math.max(140,Math.min(380,(b[2]+b[3])*1.4+Math.sin(b[0]*0.005+b[1]*0.008)*80))}); 
+    BLDS.push({x:b[0],y:b[1],w:b[2],h:b[3],col:NBC[i%NBC.length],roof:NRC[i%NRC.length],bh:Math.max(90,Math.min(200,(b[2]+b[3])*0.85+Math.sin(b[0]*0.005+b[1]*0.008)*40))}); 
   });
 
   // New city trees — along boulevards
@@ -2495,11 +2495,23 @@ function drawScene(){
   const _hpt=P3(P.x+_hfX, P.y+_hfY, 0);
   const horizY=Math.max(-30, Math.min(gc.height*0.55, _hpt[1]));
 
-  // Ground fill (below horizon)
-  const _gc=lerpRGB([8,32,8],[32,88,24],_dl);
+  // Ground fill (below horizon) — GTA VC grey-brown
+  const _gc=lerpRGB([18,18,14],[52,48,38],_dl);
   if(horizY < gc.height){
     ctx.fillStyle=_gc;
     ctx.fillRect(0, Math.max(0,horizY), gc.width, gc.height-Math.max(0,horizY));
+  }
+  // Horizon haze band (GTA VC warm glow at horizon)
+  if(horizY > 0 && horizY < gc.height){
+    const hazeH=Math.min(60, gc.height*0.12);
+    const hazeA=_dl<0.5?0.22:(_dl<0.75?0.18:0.14);
+    const hazeR=_dl<0.5?20:(_dl<0.75?180:60);
+    const hazeG=_dl<0.5?8:(_dl<0.75?80:55);
+    const hazeB=_dl<0.5?4:(_dl<0.75?10:90);
+    const hg=ctx.createLinearGradient(0,horizY,0,horizY+hazeH);
+    hg.addColorStop(0,`rgba(${hazeR},${hazeG},${hazeB},${hazeA})`);
+    hg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=hg;ctx.fillRect(0,horizY,gc.width,hazeH);
   }
 
   ctx.save(); // save for restore at end
@@ -2509,7 +2521,7 @@ function drawScene(){
     const gs=100;
     const gx0=Math.floor((P.x-1200)/gs)*gs;
     const gy0=Math.floor((P.y-1200)/gs)*gs;
-    ctx.strokeStyle='rgba(14,24,40,.32)';ctx.lineWidth=1;
+    ctx.strokeStyle='rgba(30,26,20,.28)';ctx.lineWidth=1; // tarmac grid
     for(let gx=gx0;gx<P.x+1400;gx+=gs){
       const [ax,ay]=P3(gx,gy0,0);const [bx,by]=P3(gx,gy0+2400,0);
       if(ay<gc.height&&by>0){
@@ -2530,7 +2542,7 @@ function drawScene(){
 
   // Depth-sort buildings, trees, lamps, sigs together
   const _allObj=[];
-  const _RD=2200; // render distance
+  const _RD=1800; // render distance
   BLDS.forEach(b=>{
     const cx=b.x+b.w*.5, cy=b.y+b.h*.5;
     const d=(cx-_cam.x)*_cam.fX+(cy-_cam.y)*_cam.fY;
@@ -2641,13 +2653,16 @@ function drawScene(){
     if(item.type==='aiveh') drawVeh(o.x,o.y,o.a,o.w,o.h,o.col,'#080e18',o.type||'sedan',o.lights||false);
   });
 
-  // Particles
+  // Particles — projected through 3D camera
   if(S.vfx!=='off'){
     parts.forEach(p=>{
       const a=p.life/p.ml;ctx.globalAlpha=a*.82;
-      const gr=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,3+a*9);
+      const [px,py,pd]=P3(p.x,p.y,p.z||3);
+      if(pd<0) return; // behind camera
+      const r=3+a*9;
+      const gr=ctx.createRadialGradient(px,py,0,px,py,r);
       gr.addColorStop(0,p.col);gr.addColorStop(1,'transparent');
-      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y,3+a*9,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
     });
     ctx.globalAlpha=1;
   }
@@ -2800,19 +2815,35 @@ function drawRoad(r){
     P3fill([[rx,ry+rh,0],[rx+rw,ry+rh,0],[rx+rw,ry+rh,6],[rx,ry+rh,6]],'rgba(18,40,65,.8)');
   } else if(r.t==='main'){
     const mc=lerpRGB([13,24,36],[18,30,44],_dlr);
-    quad(mc,rx,ry,rw,rh);
-    // Curb edges — slight 3D raise
+    const swCol=lerpRGB([44,40,32],[88,82,68],_dlr); // sidewalk colour
+    const swW=22; // sidewalk width
     const isH=rw>rh;
+    // ── SIDEWALKS (drawn before road, behind curb) ──
     if(isH){
-      P3fill([[rx,ry,0],[rx+rw,ry,0],[rx+rw,ry,5],[rx,ry,5]],'rgba(38,68,98,.9)');
-      P3fill([[rx,ry+rh,0],[rx+rw,ry+rh,0],[rx+rw,ry+rh,5],[rx,ry+rh,5]],'rgba(38,68,98,.9)');
-      // Dashes
+      quad(swCol,rx,ry-swW,rw,swW);       // top sidewalk
+      quad(swCol,rx,ry+rh,rw,swW);        // bottom sidewalk
+      // Sidewalk edge strips (kerb top face)
+      P3fill([[rx,ry-swW,0],[rx+rw,ry-swW,0],[rx+rw,ry-swW,6],[rx,ry-swW,6]],lerpRGB([38,34,28],[74,68,56],_dlr));
+      P3fill([[rx,ry+rh+swW,0],[rx+rw,ry+rh+swW,0],[rx+rw,ry+rh+swW,6],[rx,ry+rh+swW,6]],lerpRGB([38,34,28],[74,68,56],_dlr));
+    } else {
+      quad(swCol,rx-swW,ry,swW,rh);
+      quad(swCol,rx+rw,ry,swW,rh);
+      P3fill([[rx-swW,ry,0],[rx-swW,ry+rh,0],[rx-swW,ry+rh,6],[rx-swW,ry,6]],lerpRGB([38,34,28],[74,68,56],_dlr));
+      P3fill([[rx+rw+swW,ry,0],[rx+rw+swW,ry+rh,0],[rx+rw+swW,ry+rh,6],[rx+rw+swW,ry,6]],lerpRGB([38,34,28],[74,68,56],_dlr));
+    }
+    // ── ROAD SURFACE ──
+    quad(mc,rx,ry,rw,rh);
+    // Curb — 3D raised kerb face
+    if(isH){
+      P3fill([[rx,ry,0],[rx+rw,ry,0],[rx+rw,ry,8],[rx,ry,8]],'rgba(68,88,108,.95)');
+      P3fill([[rx,ry+rh,0],[rx+rw,ry+rh,0],[rx+rw,ry+rh,8],[rx,ry+rh,8]],'rgba(68,88,108,.95)');
+      // Centre dashes
       for(let lx=rx+22;lx<rx+rw-12;lx+=50){
         quad('rgba(255,242,18,.75)',lx,ry+rh/2-1.5,32,3);
       }
     } else {
-      P3fill([[rx,ry,0],[rx+4,ry,0],[rx+4,ry+rh,0],[rx,ry+rh,0]],'rgba(38,68,98,.9)');
-      P3fill([[rx+rw-4,ry,0],[rx+rw,ry,0],[rx+rw,ry+rh,0],[rx+rw-4,ry+rh,0]],'rgba(38,68,98,.9)');
+      P3fill([[rx,ry,0],[rx+4,ry,0],[rx+4,ry+rh,0],[rx,ry+rh,0]],'rgba(68,88,108,.95)');
+      P3fill([[rx+rw-4,ry,0],[rx+rw,ry,0],[rx+rw,ry+rh,0],[rx+rw-4,ry+rh,0]],'rgba(68,88,108,.95)');
     }
   } else {
     quad('#12202e',rx,ry,rw,rh);
@@ -2823,15 +2854,20 @@ function drawRoad(r){
 
 
 function drawBld(b){
-  const bh=b.bh||80; // 3D height
+  const bh=b.bh||55; // 3D height
   const dl=getDaylight();
   const bx=b.x,by=b.y,bw=b.w,bd=b.h; // world footprint
 
-  // ── GROUND SHADOW ──
+  // ── BUILDING GROUND SHADOW (flat projected) ──
   if(S.shd!=='off'){
-    const [gsx,gsy]=P3(bx+bw*0.5,by+bd,0);
-    ctx.fillStyle='rgba(0,0,0,0.28)';
-    ctx.beginPath();ctx.ellipse(gsx,gsy+4,bw*0.38,bd*ISO.Y*0.28,0,0,Math.PI*2);ctx.fill();
+    const _dl2=getDaylight();
+    const sAlpha=0.18+(_dl2<0.5?0.12:0); // darker at day
+    const sOff=bh*0.22; // shadow length proportional to height
+    // Shadow polygon: offset in sun direction
+    P3fill([
+      [bx,by,0],[bx+bw,by,0],
+      [bx+bw+sOff,by+bd+sOff,0],[bx+sOff,by+bd+sOff,0]
+    ],`rgba(0,0,0,${sAlpha})`);
   }
 
   // ── FRONT FACE (facing camera — min Y side) ──
@@ -2840,6 +2876,11 @@ function drawBld(b){
     [bx,by,0],[bx+bw,by,0],
     [bx+bw,by,bh],[bx,by,bh]
   ],frontCol);
+  // Foundation strip (dark base — GTA3 style)
+  P3fill([
+    [bx,by,0],[bx+bw,by,0],
+    [bx+bw,by,bh*0.08],[bx,by,bh*0.08]
+  ],shade(frontCol,-45));
 
   // Front face windows
   if(S.tex!=='low'){
@@ -2918,6 +2959,29 @@ function drawBld(b){
     }
   }
 
+  // Neon sign on city buildings at night
+  if(bx>7680 && S.tex!=='low'){
+    const nAlpha=Math.max(0, 0.7-(getDaylight()*1.2));
+    if(nAlpha>0.05){
+      const NEONS=['rgba(255,40,180,','rgba(0,220,255,','rgba(255,160,0,','rgba(80,255,80,'];
+      const nc=NEONS[Math.floor((bx*0.01+by*0.007))%NEONS.length];
+      const nz=bh*0.55, nw=Math.min(bw*0.55,44);
+      const [nx0,ny0]=P3(bx+bw*0.2,by,nz);
+      const [nx1,ny1]=P3(bx+bw*0.2+nw,by,nz);
+      const [nx2,ny2]=P3(bx+bw*0.2+nw,by,nz+8);
+      const [nx3,ny3]=P3(bx+bw*0.2,by,nz+8);
+      ctx.beginPath();ctx.moveTo(nx0,ny0);ctx.lineTo(nx1,ny1);ctx.lineTo(nx2,ny2);ctx.lineTo(nx3,ny3);ctx.closePath();
+      ctx.fillStyle=nc+(nAlpha.toFixed(2))+')';ctx.fill();
+      // Glow halo
+      if(S.shd!=='off'){
+        const ngx=(nx0+nx1)/2, ngy=(ny0+ny2)/2;
+        const ng=ctx.createRadialGradient(ngx,ngy,0,ngx,ngy,28);
+        ng.addColorStop(0,nc+(nAlpha*0.35).toFixed(2)+')');
+        ng.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=ng;ctx.beginPath();ctx.arc(ngx,ngy,28,0,Math.PI*2);ctx.fill();
+      }
+    }
+  }
   // Building outline
   ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=0.7;
   P3stroke([[bx,by,0],[bx+bw,by,0],[bx+bw,by,bh],[bx,by,bh],[bx,by,0]],'rgba(0,0,0,.35)',0.8);
@@ -2960,7 +3024,18 @@ function drawLamp(l){
   ctx.beginPath();ctx.moveTo(px0,py0);ctx.lineTo(px1,py1);ctx.lineTo(px2,py2);ctx.stroke();
   // Glow
   const glowAlpha=0.04+Math.max(0,(1-dl2)*0.88);
-  const glowR=l.hw?(38+Math.max(0,(1-dl2)*38)):(24+Math.max(0,(1-dl2)*28));
+  const glowR=l.hw?(58+Math.max(0,(1-dl2)*55)):(38+Math.max(0,(1-dl2)*42)); // GTA-style big light pools
+    // Ground light pool (yellow-orange circle on pavement)
+  if(S.shd!=='off'){
+    const gpa=Math.max(0,(1-dl2)*0.22);
+    if(gpa>0.02){
+      const [gpx,gpy]=P3(l.x+14,l.y,0);
+      const gp=ctx.createRadialGradient(gpx,gpy,0,gpx,gpy,glowR*0.7);
+      gp.addColorStop(0,`rgba(255,185,50,${gpa.toFixed(2)})`);
+      gp.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gp;ctx.beginPath();ctx.arc(gpx,gpy,glowR*0.7,0,Math.PI*2);ctx.fill();
+    }
+  }
   if(S.shd!=='off'&&glowAlpha>0.05){
     const lg=ctx.createRadialGradient(px2,py2,0,px2,py2,glowR);
     lg.addColorStop(0,`rgba(255,195,65,${Math.min(0.95,glowAlpha).toFixed(2)})`);
@@ -2974,7 +3049,7 @@ function drawLamp(l){
 
 
 function drawSig(s){
-  const sh=56, pw=6; // pole height, width
+  const sh=75, pw=7; // pole height, width (GTA style)
   // Pole — 3D box
   P3fill([[s.x-pw/2,s.y,0],[s.x+pw/2,s.y,0],[s.x+pw/2,s.y,sh],[s.x-pw/2,s.y,sh]],'#08121e');
   P3fill([[s.x+pw/2,s.y,0],[s.x+pw/2,s.y+pw,0],[s.x+pw/2,s.y+pw,sh],[s.x+pw/2,s.y,sh]],'#050d18');
@@ -3325,16 +3400,21 @@ function drawVeh(x,y,angle,w,h,col,roofCol,type,lights=false){
   ],roofCol);
   // Top (roof top face)
   P3fill([[...C[0],carH],[...C[1],carH],[...C[2],carH],[...C[3],carH]],shade(col,-12));
-  // Wheel positions (4 wheels as cylinders)
+  // Wheel positions — proper tyres
   if(S.tex!=='low'){
-    const wz=2,wr=3.5;
-    [[C[0],C[3],.15],[C[1],C[2],.15],[C[0],C[3],.8],[C[1],C[2],.8]].forEach(([ca,cb,t])=>{
+    const wr=4.2;
+    [[C[0],C[3],.13],[C[1],C[2],.13],[C[0],C[3],.82],[C[1],C[2],.82]].forEach(([ca,cb,t])=>{
       const wx=ca[0]+(cb[0]-ca[0])*t, wy=ca[1]+(cb[1]-ca[1])*t;
-      // Top of wheel
-      const [wsx,wsy]=P3(wx,wy,wr*1.5+wz);
-      ctx.fillStyle='#040a10';ctx.beginPath();ctx.ellipse(wsx,wsy,wr+1,wr*ISO.Y+1,0,0,Math.PI*2);ctx.fill();
-      // Rim
-      ctx.fillStyle='#1e3248';ctx.beginPath();ctx.ellipse(wsx,wsy,wr-1,wr*ISO.Y*.8,0,0,Math.PI*2);ctx.fill();
+      const [wgx,wgy]=P3(wx,wy,0);
+      ctx.fillStyle='rgba(0,0,0,.25)';
+      ctx.beginPath();ctx.ellipse(wgx,wgy,wr,wr*0.42,0,0,Math.PI*2);ctx.fill();
+      const [wsx,wsy]=P3(wx,wy,wr+1);
+      ctx.fillStyle='#0a0a0a';
+      ctx.beginPath();ctx.ellipse(wsx,wsy,wr+1.2,wr*0.65,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#a8b8c8';
+      ctx.beginPath();ctx.ellipse(wsx,wsy,wr*0.5,wr*0.34,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#687888';
+      ctx.beginPath();ctx.ellipse(wsx,wsy,wr*0.14,wr*0.09,0,0,Math.PI*2);ctx.fill();
     });
   }
 }
@@ -3463,18 +3543,38 @@ function drawPlayer(){
   // Top of body (bonnet + boot)
   P3fill([[...C[0],carH],[...C[1],carH],[...C[2],carH],[...C[3],carH]],shade(col,-8));
 
-  // Wheels — 3D cylinders at corners
+  // Wheels — proper tire + rim (GTA VC style)
   if(S.tex!=='low'){
     [[C[0],C[3],.12],[C[1],C[2],.12],[C[0],C[3],.82],[C[1],C[2],.82]].forEach(([ca,cb,t])=>{
       const wx=ca[0]+(cb[0]-ca[0])*t, wy=ca[1]+(cb[1]-ca[1])*t;
-      const wr=3.8;
-      const [wsx,wsy]=P3(wx,wy,wr*1.6+1);
-      ctx.fillStyle='#040a10';ctx.beginPath();ctx.ellipse(wsx,wsy,wr+1,wr*ISO.Y+1,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#1e3248';ctx.beginPath();ctx.ellipse(wsx,wsy,wr-1.2,wr*ISO.Y*.75,0,0,Math.PI*2);ctx.fill();
+      const wr=5; // wheel radius
+      // Tyre shadow on ground
+      const [wgx,wgy]=P3(wx,wy,0);
+      ctx.fillStyle='rgba(0,0,0,.3)';
+      ctx.beginPath();ctx.ellipse(wgx,wgy,wr*1.1,wr*0.45,0,0,Math.PI*2);ctx.fill();
+      // Tyre (black outer)
+      const [wsx,wsy]=P3(wx,wy,wr+1);
+      ctx.fillStyle='#0a0a0a';
+      ctx.beginPath();ctx.ellipse(wsx,wsy,wr+1.5,wr*0.7,0,0,Math.PI*2);ctx.fill();
+      // Tyre sidewall highlight
+      ctx.strokeStyle='rgba(60,60,60,.8)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.ellipse(wsx,wsy,wr+0.5,wr*0.62,0,0,Math.PI*2);ctx.stroke();
+      // Rim (bright alloy)
+      ctx.fillStyle='#c8d8e8';
+      ctx.beginPath();ctx.ellipse(wsx,wsy,wr*0.58,wr*0.38,0,0,Math.PI*2);ctx.fill();
+      // Rim spokes
       if(S.tex==='high'){
-        ctx.strokeStyle='rgba(120,160,200,.55)';ctx.lineWidth=0.8;
-        ctx.beginPath();ctx.moveTo(wsx,wsy-(wr*ISO.Y*.75));ctx.lineTo(wsx,wsy+(wr*ISO.Y*.75));ctx.stroke();
+        ctx.strokeStyle='rgba(180,200,220,.9)';ctx.lineWidth=1;
+        for(let sp=0;sp<5;sp++){
+          const ang=sp*Math.PI*2/5;
+          const rx1=wsx+Math.cos(ang)*wr*0.12, ry1=wsy+Math.sin(ang)*wr*0.08;
+          const rx2=wsx+Math.cos(ang)*wr*0.52, ry2=wsy+Math.sin(ang)*wr*0.33;
+          ctx.beginPath();ctx.moveTo(rx1,ry1);ctx.lineTo(rx2,ry2);ctx.stroke();
+        }
       }
+      // Centre cap
+      ctx.fillStyle='#788898';
+      ctx.beginPath();ctx.ellipse(wsx,wsy,wr*0.16,wr*0.1,0,0,Math.PI*2);ctx.fill();
     });
   }
 
