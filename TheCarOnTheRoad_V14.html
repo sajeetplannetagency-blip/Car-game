@@ -940,7 +940,7 @@ const ISO={Y:0.55, Z:0.50, ZX:0.10};
 
 // === GTA VICE CITY PERSPECTIVE CAMERA ===
 // behind=320  height=160  lookFwd=80  focal=360
-const PCAM={behind:260, height:155, lookFwd:45, focal:340};
+const PCAM={behind:160, height:42, lookFwd:50, focal:320};
 let _p3cos=1,_p3sin=0;
 // Pre-computed 3D camera basis (updated every frame by _updateP3)
 const _cam={x:0,y:0,z:0,rX:1,rY:0,fX:0,fY:0,fZ:-1,uX:0,uY:0,uZ:1};
@@ -981,7 +981,7 @@ function P3(wx,wy,wz=0){
   const s=PCAM.focal/fwd;
   return[
     gc.width/2  + right*s + (CAM._shkX||0),
-    gc.height*0.62 - up*s + (CAM._shkY||0),  // 0.62: car in lower third
+    gc.height*0.55 - up*s + (CAM._shkY||0),  // 0.55: horizon in upper half
     fwd  // also return depth for fog calculations
   ];
 }
@@ -1335,9 +1335,9 @@ function buildWorld(){
 
   // New city trees — along boulevards
   for(let x=7780;x<9900;x+=130){
-    TREES.push({x,y:858,r:12+Math.random()*7});
-    TREES.push({x,y:1160,r:12+Math.random()*7});
-    TREES.push({x,y:1500,r:11+Math.random()*6});
+    TREES.push({x,y:858,r:7+Math.random()*4});
+    TREES.push({x,y:1160,r:7+Math.random()*4});
+    TREES.push({x,y:1500,r:6+Math.random()*4});
   }
 
   // New city lamps — along main roads
@@ -2542,14 +2542,14 @@ function drawScene(){
 
   // Depth-sort buildings, trees, lamps, sigs together
   const _allObj=[];
-  const _RD=1500; // render distance
+  const _RD=1800; // render distance
   BLDS.forEach(b=>{
     const cx=b.x+b.w*.5, cy=b.y+b.h*.5;
     const d=(cx-_cam.x)*_cam.fX+(cy-_cam.y)*_cam.fY;
     if(d<-50||d>_RD) return; // cull far/behind objects
     // Skip buildings too close to player (they clip over car)
     const _pdx=cx-P.x, _pdy=cy-P.y;
-    if(_pdx*_pdx+_pdy*_pdy < 60*60) return;
+    if(_pdx*_pdx+_pdy*_pdy < 45*45) return;
     _allObj.push({type:'bld',o:b,d});
   });
   TREES.forEach(t=>{
