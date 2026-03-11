@@ -2369,15 +2369,35 @@ function drawScene(){
   // Then translate for camera position
   ctx.translate(-cx,-cy);
 
-  // Ground — bright green grass (GTA1/Mario style), dims at night
+  // Ground
   const _gc=lerpRGB([8,32,8],[32,88,24],_dl);
-  ctx.fillStyle=_gc;ctx.fillRect(0,0,WW,WH);
+  ctx.fillStyle=_gc; ctx.fillRect(0,0,WW,WH);
 
-  // Ground grid texture
   if(S.tex==='high'){
-    ctx.strokeStyle='rgba(14,24,40,.75)';ctx.lineWidth=1;
+    // Rich ground: grass texture with noise + dirt patches
     const gs=55;
-    const gx0=Math.floor(cx/gs)*gs,gy0=Math.floor(cy/gs)*gs;
+    const gx0=Math.floor(cx/gs)*gs, gy0=Math.floor(cy/gs)*gs;
+    // Subtle grass variation patches
+    for(let gx=gx0;gx<cx+gc.width+gs*2;gx+=gs){
+      for(let gy=gy0;gy<cy+gc.height+gs*2;gy+=gs){
+        const nv=Math.sin(gx*0.031)*Math.cos(gy*0.027)*0.5+0.5;
+        const patch=lerpRGB([10,38,10],[28,72,18],nv*_dl);
+        ctx.fillStyle=patch; ctx.fillRect(gx,gy,gs,gs);
+      }
+    }
+    // Fine grid lines (tarmac-style)
+    ctx.strokeStyle=`rgba(0,0,0,${0.12+_dl*0.06})`; ctx.lineWidth=0.6;
+    for(let x=gx0;x<cx+gc.width+gs;x+=gs){ctx.beginPath();ctx.moveTo(x,cy);ctx.lineTo(x,cy+gc.height);ctx.stroke();}
+    for(let y=gy0;y<cy+gc.height+gs;y+=gs){ctx.beginPath();ctx.moveTo(cx,y);ctx.lineTo(cx+gc.width,y);ctx.stroke();}
+    // Global ambient shadow under car (soft dark circle on ground)
+    const spr=ctx.createRadialGradient(P.x,P.y+P.h*.3,0,P.x,P.y+P.h*.3,P.h*2.2);
+    spr.addColorStop(0,`rgba(0,0,0,${0.18+_dl*0.06})`); spr.addColorStop(1,'transparent');
+    ctx.fillStyle=spr; ctx.fillRect(P.x-P.h*2.5,P.y-P.h*1.5,P.h*5,P.h*4);
+  } else {
+    // Med/low: simple grid
+    ctx.strokeStyle='rgba(14,24,40,.55)'; ctx.lineWidth=1;
+    const gs=55;
+    const gx0=Math.floor(cx/gs)*gs, gy0=Math.floor(cy/gs)*gs;
     for(let x=gx0;x<cx+gc.width+gs;x+=gs){ctx.beginPath();ctx.moveTo(x,cy);ctx.lineTo(x,cy+gc.height);ctx.stroke();}
     for(let y=gy0;y<cy+gc.height+gs;y+=gs){ctx.beginPath();ctx.moveTo(cx,y);ctx.lineTo(cx+gc.width,y);ctx.stroke();}
   }
@@ -2454,6 +2474,30 @@ function drawScene(){
 
   drawPlayer();
   ctx.restore();
+
+  // ── HIGH GRAPHICS POST-PROCESSING ──
+  if(S.tex==='high' || S.shd==='high'){
+    const spd=Math.abs(P.spd);
+    // Motion blur vignette at high speed
+    if(spd>0.55){
+      const mblur=Math.min(0.18,(spd-0.55)*0.38);
+      const mg=ctx.createRadialGradient(gc.width/2,gc.height/2,gc.height*0.28,gc.width/2,gc.height/2,gc.height*0.72);
+      mg.addColorStop(0,'transparent');
+      mg.addColorStop(1,`rgba(0,0,0,${mblur.toFixed(3)})`);
+      ctx.fillStyle=mg; ctx.fillRect(0,0,gc.width,gc.height);
+    }
+    // NOS bloom — electric blue screen flash
+    if(P.boosting){
+      const bv=0.04+0.03*Math.sin(Date.now()*0.02);
+      ctx.fillStyle=`rgba(0,180,255,${bv.toFixed(3)})`;
+      ctx.fillRect(0,0,gc.width,gc.height);
+    }
+    // Screen vignette (always on)
+    const vg=ctx.createRadialGradient(gc.width/2,gc.height/2,gc.height*0.32,gc.width/2,gc.height/2,gc.height*0.85);
+    vg.addColorStop(0,'transparent');
+    vg.addColorStop(1,'rgba(0,0,0,0.38)');
+    ctx.fillStyle=vg; ctx.fillRect(0,0,gc.width,gc.height);
+  }
 
   // ── NIGHT OVERLAY — darkens entire scene at night ──
   // Maximum opacity 0.52 at midnight, 0 at noon
@@ -2580,6 +2624,15 @@ function drawRoad(r){
     const mg=ctx.createLinearGradient(r.x,r.y,r.x,r.y+r.h);
     mg.addColorStop(0,_mc0);mg.addColorStop(.5,_mc1);mg.addColorStop(1,_mc0);
     ctx.fillStyle=mg;ctx.fillRect(r.x,r.y,r.w,r.h);
+    // Wet road reflection (HIGH only)
+    if(S.tex==='high'){
+      const refA=(0.05+_dlr2*0.04);
+      const rg=ctx.createLinearGradient(r.x,r.y,r.x+r.w,r.y+r.h);
+      rg.addColorStop(0,`rgba(0,140,220,${(refA*0.7).toFixed(3)})`);
+      rg.addColorStop(0.5,`rgba(80,160,255,${refA.toFixed(3)})`);
+      rg.addColorStop(1,`rgba(0,100,180,${(refA*0.6).toFixed(3)})`);
+      ctx.fillStyle=rg; ctx.fillRect(r.x,r.y,r.w,r.h);
+    }
     ctx.fillStyle='rgba(38,68,98,.95)';
     const isH=r.w>r.h;
     if(isH){ctx.fillRect(r.x,r.y,r.w,4);ctx.fillRect(r.x,r.y+r.h-4,r.w,4);}
@@ -2668,9 +2721,14 @@ function drawBld(b){
         ctx.fillStyle=winBright>0?`rgba(255,210,90,${winBright.toFixed(2)})`:'rgba(8,16,28,.65)';
         ctx.fillRect(wx,wy,10,13);
         if(lit&&S.shd==='high'){
-          const wg=ctx.createRadialGradient(wx+5,wy+6,0,wx+5,wy+6,13);
-          wg.addColorStop(0,'rgba(255,195,70,.1)');wg.addColorStop(1,'transparent');
-          ctx.fillStyle=wg;ctx.fillRect(wx-5,wy-5,20,23);
+          const wg=ctx.createRadialGradient(wx+5,wy+6,0,wx+5,wy+6,18);
+          wg.addColorStop(0,'rgba(255,210,80,.18)');wg.addColorStop(1,'transparent');
+          ctx.fillStyle=wg;ctx.fillRect(wx-8,wy-8,26,30);
+          // Neon flicker on some windows
+          if(Math.sin(b.x*.007+b.y*.011+FN*.003)>0.7){
+            ctx.fillStyle='rgba(0,200,255,0.06)';
+            ctx.fillRect(wx,wy,10,13);
+          }
         }
       }
     }
@@ -2703,6 +2761,21 @@ function drawTree(t){
 
 function drawLamp(l){
   const _dl2=getDaylight();
+  // Volumetric light cone (HIGH shadows, at night)
+  if(S.shd==='high' && _dl2<0.5){
+    const coneA=Math.max(0,(0.5-_dl2)*0.85);
+    const lx=l.x+15, ly=l.y-38;
+    const coneH=l.hw?175:120, coneW=l.hw?95:68;
+    const cg=ctx.createLinearGradient(lx,ly,lx,ly+coneH);
+    cg.addColorStop(0,`rgba(255,220,120,${(coneA*0.2).toFixed(3)})`);
+    cg.addColorStop(1,'transparent');
+    ctx.fillStyle=cg;
+    ctx.beginPath();
+    ctx.moveTo(lx,ly);
+    ctx.lineTo(lx-coneW/2,ly+coneH);
+    ctx.lineTo(lx+coneW/2,ly+coneH);
+    ctx.closePath(); ctx.fill();
+  }
   // Lamp pole — darker in day, lighter at night
   ctx.strokeStyle=_dl2>0.5?'#182838':'#243850';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(l.x,l.y-38);ctx.lineTo(l.x+15,l.y-38);ctx.stroke();
