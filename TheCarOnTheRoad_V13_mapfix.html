@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="screen-orientation" content="landscape">
 <title>The Car On The Road</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -47,83 +46,20 @@ canvas#gc{
 }
 
 /* ── FULL MAP OVERLAY ── */
-#fullMap{
-  position:fixed;inset:0;z-index:180;
-  background:rgba(0,3,10,0.95);
-  display:none;flex-direction:column;align-items:center;
-  padding:10px;gap:6px;backdrop-filter:blur(3px);
-  border:1px solid rgba(0,150,255,0.15);
-}
-@keyframes mapFadeIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
-#fullMap canvas{
-  border:1px solid rgba(0,200,255,.25);
-  border-radius:4px;
-  cursor:grab;
-  touch-action:none;
-  box-shadow:0 0 40px rgba(0,200,255,.08);
-}
-#fullMap canvas:active{cursor:grabbing;}
-#fmHeader{
-  display:flex;align-items:center;justify-content:space-between;
-  width:100%;max-width:calc(100vw - 32px);
-  padding:10px 0 8px;
-}
-#fmTitle{
-  font-family:Orbitron,monospace;font-size:12px;
-  color:#00c8ff;letter-spacing:4px;
-}
-#fmZone{
-  font-family:Orbitron,monospace;font-size:9px;
-  color:#1e4a6a;letter-spacing:2px;
-}
-#fmClose{
-  background:rgba(255,45,85,.15);border:1px solid rgba(255,45,85,.35);
-  border-radius:3px;color:#ff2d55;font-family:Orbitron,monospace;
-  font-size:10px;letter-spacing:2px;padding:5px 12px;cursor:pointer;
-}
-#fmClose:active{background:rgba(255,45,85,.3);}
-#fmFooter{
-  display:flex;gap:20px;align-items:center;padding:8px 0 4px;
-  font-family:Orbitron,monospace;font-size:8px;color:#1a3a55;letter-spacing:1px;
-}
-.fmLeg{display:flex;align-items:center;gap:5px;}
-.fmLegDot{width:8px;height:8px;border-radius:50%;}
-#fmHint{font-family:Orbitron,monospace;font-size:7px;color:#0e2235;letter-spacing:1px;padding-bottom:2px;}
-/* Portrait mode warning */
-#portraitWarn{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:#020810;z-index:999;
-  display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;
-}
-#portraitWarn .pw-icon{font-size:60px;animation:rotHint 2s ease infinite;}
-@keyframes rotHint{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
-#portraitWarn .pw-txt{font-family:'Orbitron',monospace;font-size:clamp(14px,4vw,22px);color:#00c8ff;text-align:center;letter-spacing:3px;line-height:1.8;}
-#portraitWarn .pw-sub{font-family:'Orbitron',monospace;font-size:10px;color:#2a4a65;letter-spacing:3px;}
 
-/* Only show in portrait */
-@media (orientation:portrait){
-  #portraitWarn{display:flex!important;}
-  #ls,#mm,#cs,#ss,#gui,#po,#mpop,#rs,#scanl,#vig{display:none!important;}
-}
-/* Landscape — ensure full coverage, no gaps */
-@media (orientation:landscape){
-  #portraitWarn{display:none!important;}
-  body{
-    /* Extra insurance: no safe-area padding squeezing game canvas */
-    padding:0!important;
-  }
-  canvas#gc{
-    width:100vw!important;height:100vh!important;
-  }
-  /* But keep UI elements inset from notch areas */
-  #gui,#ls,#mm,#cs,#ss,#po,#mpop,#rs{
-    top:env(safe-area-inset-top,0px);
-    left:env(safe-area-inset-left,0px);
-    right:env(safe-area-inset-right,0px);
-    bottom:env(safe-area-inset-bottom,0px);
-    width:auto;height:auto;
-  }
-}
+to{opacity:1;transform:scale(1)}}
+
+
+
+
+
+
+
+
+
+
+
+/* Portrait mode warning */
 
 /* LOADING */
 #ls{position:fixed;inset:0;background:#020810;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:18px;}
@@ -321,8 +257,7 @@ canvas#gc{
 <canvas id="gc"></canvas>
 
 <!-- PORTRAIT WARNING -->
-<div id="portraitWarn">
-  <div class="pw-icon">📱</div>
+
   <div class="pw-txt">ROTATE YOUR DEVICE<br>TO LANDSCAPE</div>
   <div class="pw-sub">THIS GAME REQUIRES HORIZONTAL MODE</div>
 </div>
@@ -472,22 +407,7 @@ canvas#gc{
   <button class="sbk" onclick="UC();backSS()">← BACK</button>
 </div>
 
-<!-- FULL MAP OVERLAY — GTA VC Style -->
-<div id="fullMap">
-  <div id="fmHeader">
-    <div id="fmTitle" style="font-family:'Orbitron',monospace;font-size:13px;color:#ff9500;letter-spacing:3px;text-transform:uppercase;">📡 CITY MAP</div>
-    <div id="fmZone" style="font-family:'Orbitron',monospace;font-size:10px;color:#00c8ff;letter-spacing:2px;">ZONE: <span id="fmZoneName">—</span></div>
-    <button id="fmClose" onclick="UC();closeMap()" style="background:rgba(255,50,50,.15);border:1px solid rgba(255,60,60,.4);color:#ff4444;font-family:'Orbitron',monospace;font-size:10px;padding:5px 14px;border-radius:3px;cursor:pointer;letter-spacing:2px;">✕ CLOSE</button>
-  </div>
-  <canvas id="fmc"></canvas>
-  <div id="fmFooter">
-    <div class="fmLeg"><div class="fmLegDot" style="background:#00c8ff"></div>YOU</div>
-    <div class="fmLeg"><div class="fmLegDot" style="background:#ff6b00"></div>MISSION</div>
-    <div class="fmLeg"><div class="fmLegDot" style="background:#00ff9d"></div>TAXI</div>
-    <div class="fmLeg"><div class="fmLegDot" style="background:#ffd700"></div>ROUTE</div>
-  </div>
-  <div id="fmHint">DRAG TO PAN  ·  PINCH TO ZOOM  ·  M TO CLOSE</div>
-</div>
+
 
 <!-- GAME UI -->
 <div id="gui">
@@ -594,12 +514,7 @@ canvas#gc{
       display:flex;align-items:center;justify-content:center;
       font-size:16px;cursor:pointer;pointer-events:all;
       backdrop-filter:blur(10px);transition:all .15s;" title="Headlights (L)">💡</div>
-    <div id="bMap" onclick="UC();openMap()" style="
-      position:absolute;top:150px;right:11px;width:38px;height:38px;
-      background:rgba(2,7,15,.9);border:1px solid rgba(0,200,255,.18);border-radius:3px;
-      display:flex;align-items:center;justify-content:center;
-      font-size:16px;cursor:pointer;pointer-events:all;
-      backdrop-filter:blur(10px);transition:all .15s;" title="Full Map (M)">🗺️</div>
+
     <div id="todHud" style="
       position:absolute;top:196px;right:11px;
       font-family:Orbitron,monospace;font-size:7px;color:rgba(200,220,255,.5);
@@ -1462,7 +1377,7 @@ function startGame(){
   lastT=performance.now();
   requestAnimationFrame(loop);
   showN('EXPLORE THE CITY — FIND MISSION MARKERS!');
-  if(screen.orientation&&screen.orientation.lock){screen.orientation.lock('landscape').catch(()=>{});}
+  
 }
 function goMenu(){
   document.getElementById('po').style.display='none';
@@ -1738,7 +1653,6 @@ function setupCtrl(){
       if(cl('#bPause')) { UC(); toggleP(); }
       if(cl('#bMusic')) { UC(); toggleMusic(); }
       if(cl('#bLights')){ UC(); toggleLights(); }
-      if(cl('#bMap'))   { UC(); openMap(); }
     }
   },{passive:false});
 
@@ -1768,7 +1682,7 @@ function setupGyro(){
     });
 }
 
-document.addEventListener('keydown',e=>{K[e.code]=true;if(e.code==='KeyH')playHorn();if(e.code==='KeyL')toggleLights();if(e.code==='KeyM')e.preventDefault(),GS==='playing'?openMap():GS==='mapview'?closeMap():null;if((e.code==='KeyP'||e.code==='Escape')&&(GS==='playing'||GS==='paused'))toggleP();if(e.code==='Escape'&&GS==='mapview')closeMap();});
+document.addEventListener('keydown',e=>{K[e.code]=true;if(e.code==='KeyH')playHorn();if(e.code==='KeyL')toggleLights();if((e.code==='KeyP'||e.code==='Escape')&&(GS==='playing'||GS==='paused'))toggleP();});
 document.addEventListener('keyup',e=>K[e.code]=false);
 
 // ── PHYSICS ──
