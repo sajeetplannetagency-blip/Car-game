@@ -940,7 +940,7 @@ const ISO={Y:0.55, Z:0.50, ZX:0.10};
 
 // === GTA VICE CITY PERSPECTIVE CAMERA ===
 // behind=320  height=160  lookFwd=80  focal=360
-const PCAM={behind:160, height:42, lookFwd:50, focal:320};
+const PCAM={behind:240, height:65, lookFwd:55, focal:290};
 let _p3cos=1,_p3sin=0;
 // Pre-computed 3D camera basis (updated every frame by _updateP3)
 const _cam={x:0,y:0,z:0,rX:1,rY:0,fX:0,fY:0,fZ:-1,uX:0,uY:0,uZ:1};
@@ -981,7 +981,7 @@ function P3(wx,wy,wz=0){
   const s=PCAM.focal/fwd;
   return[
     gc.width/2  + right*s + (CAM._shkX||0),
-    gc.height*0.55 - up*s + (CAM._shkY||0),  // 0.55: horizon in upper half
+    gc.height*0.58 - up*s + (CAM._shkY||0),  // 0.58: car in lower third
     fwd  // also return depth for fog calculations
   ];
 }
@@ -2549,7 +2549,7 @@ function drawScene(){
     if(d<-50||d>_RD) return; // cull far/behind objects
     // Skip buildings too close to player (they clip over car)
     const _pdx=cx-P.x, _pdy=cy-P.y;
-    if(_pdx*_pdx+_pdy*_pdy < 45*45) return;
+    if(_pdx*_pdx+_pdy*_pdy < 90*90) return; // skip buildings within 90 units
     _allObj.push({type:'bld',o:b,d});
   });
   TREES.forEach(t=>{
