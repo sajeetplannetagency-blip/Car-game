@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="screen-orientation" content="landscape">
 <title>The Car On The Road</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -249,6 +250,18 @@ to{opacity:1;transform:scale(1)}}
 .stat_row span{color:#00c8ff;}
 .stat_drive{background:rgba(0,20,40,.5);border-radius:3px;padding:6px 10px;margin:3px 0;width:100%;max-width:400px;font-size:9px;color:#6a8a9a;}
 .stat_drive .sd_h{color:#00c8ff;font-size:10px;margin-bottom:2px;}
+
+#portraitWarn{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:#000;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+#portraitWarn .pw-icon{font-size:60px;animation:rotHint 2s ease infinite;}
+@keyframes rotHint{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+#portraitWarn .pw-txt{font-family:'Orbitron',monospace;font-size:clamp(14px,4vw,22px);color:#00c8ff;text-align:center;letter-spacing:3px;line-height:1.8;}
+#portraitWarn .pw-sub{font-family:'Orbitron',monospace;font-size:10px;color:#2a4a65;letter-spacing:3px;}
+/* Only show in portrait */
+@media (orientation:portrait){#portraitWarn{display:flex!important;}}
+@media (orientation:landscape){#portraitWarn{display:none!important;}}
 </style>
 </head>
 <body>
@@ -1376,6 +1389,7 @@ function startGame(){
   setTimeout(startMusic, 400);
   lastT=performance.now();
   requestAnimationFrame(loop);
+  if(screen.orientation&&screen.orientation.lock){screen.orientation.lock('landscape').catch(()=>{});}
   showN('EXPLORE THE CITY — FIND MISSION MARKERS!');
   
 }
@@ -4612,5 +4626,11 @@ document.addEventListener('contextmenu',e=>e.preventDefault());
   }, {passive:true});
 });
 </script>
+
+<div id="portraitWarn">
+  <div class="pw-icon">📱</div>
+  <div class="pw-txt">ROTATE YOUR DEVICE<br>TO LANDSCAPE</div>
+  <div class="pw-sub">THIS GAME REQUIRES HORIZONTAL MODE</div>
+</div>
 </body>
 </html>
