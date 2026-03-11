@@ -1534,7 +1534,7 @@ function startGame(){
   initAC();
   P.cfg=CARS[selCar]; P.col=P.cfg.col; P.body=P.cfg.body;
   P.w=P.cfg.w; P.h=P.cfg.h;
-  P.x=600;P.y=1210;P.a=0;P.vx=0;P.vy=0;P.spd=0;
+  P.x=750;P.y=1200;P.a=0;P.vx=0;P.vy=0;P.spd=0; // spawn center of road
   P.boost=1;P.bcd=0;P.boosting=false;P.trail=[];P.skid=false;
   buildWorld();
   applyLayout();
@@ -2549,7 +2549,7 @@ function drawScene(){
     if(d<-50||d>_RD) return; // cull far/behind objects
     // Skip buildings too close to player (they clip over car)
     const _pdx=cx-P.x, _pdy=cy-P.y;
-    if(_pdx*_pdx+_pdy*_pdy < 90*90) return; // skip buildings within 90 units
+    if(_pdx*_pdx+_pdy*_pdy < 150*150) return; // skip buildings within 150 units
     _allObj.push({type:'bld',o:b,d});
   });
   TREES.forEach(t=>{
@@ -2867,6 +2867,9 @@ function drawBld(b){
   const bh=b.bh||32; // 3D height
   const dl=getDaylight();
   const bx=b.x,by=b.y,bw=b.w,bd=b.h; // world footprint
+  // Skip buildings very close to player (they clip over car)
+  const _cbdx=bx+bw/2-P.x, _cbdy=by+bd/2-P.y;
+  if(_cbdx*_cbdx+_cbdy*_cbdy < 155*155) return; // 155 unit safety zone around player
 
   // ── BUILDING GROUND SHADOW (flat projected) ──
   if(S.shd!=='off'){
