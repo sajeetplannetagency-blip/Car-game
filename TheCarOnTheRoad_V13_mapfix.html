@@ -71,7 +71,7 @@ to{opacity:1;transform:scale(1)}}
 .ls2{font-family:'Orbitron',monospace;font-size:9px;color:#3a6a85;letter-spacing:5px;z-index:1;}
 .lbw{width:260px;z-index:1;}
 .lb{height:2px;background:#0a1520;overflow:hidden;}
-.lf{height:100%;background:linear-gradient(90deg,#00c8ff,#ff6b00);width:0%;transition:width .3s;}
+.lf{height:100%;background:linear-gradient(90deg,#00c8ff,#ff6b00);width:0%;transition:width .18s ease-out;}
 .lp{font-family:'Orbitron',monospace;font-size:9px;color:#00c8ff;text-align:right;margin-top:5px;}
 .lstat{font-family:'Orbitron',monospace;font-size:8px;color:#1e3a55;letter-spacing:3px;z-index:1;}
 
@@ -567,6 +567,7 @@ to{opacity:1;transform:scale(1)}}
   <button class="pbtn pbr" onclick="UC();toggleP()">▶ RESUME</button>
   <button class="pbtn" style="background:rgba(0,180,80,.12);border-color:rgba(0,220,100,.3);color:#00ff9d;" onclick="saveGame()">💾 SAVE GAME</button>
   <button class="pbtn" style="background:rgba(0,120,200,.1);border-color:rgba(0,180,255,.25);color:#00c8ff;" onclick="openStats()">📊 STATS</button>
+  <button class="pbtn" style="background:rgba(100,80,200,.1);border-color:rgba(150,100,255,.25);color:#aa88ff;" onclick="UC();document.getElementById('po').style.display='none';showSS('pause')">⚙ SETTINGS</button>
   <button class="pbtn pbm" onclick="UC();goMenu()">⌂ MAIN MENU</button>
 </div>
 
@@ -775,7 +776,7 @@ function startEng(){
 
 function updateEng(spd){
   if(!eOsc)return;
-  const bm=P.boosting?2.0:1;
+  const bm=P.boosting?1.65:1;
   eOsc.frequency.setTargetAtTime(52+Math.abs(spd)*145*bm,AC.currentTime,.04);
   eGain.gain.setTargetAtTime(.012+Math.abs(spd)*.016,AC.currentTime,.04);
   if(eFlt) eFlt.frequency.setTargetAtTime(280+Math.abs(spd)*220,AC.currentTime,.04);
@@ -1142,47 +1143,33 @@ function buildWorld(){
   const NBC=['#1e4a8a','#8a3a1e','#1e7a3a','#8a6a1e','#5a1e8a','#1e6a7a','#8a1e4a','#3a7a1e'];
   const NRC=['#12307a','#6a2810','#12602a','#6a5010','#421270','#126070','#6a1230','#287a12'];
 
-  // ══ 290 CITY BUILDINGS — aligned to road grid (streets clear) ══
-  // Vertical streets: x:7720-7770, 8050-8095, 8380-8425, 8710-8755, 9040-9085, 9370-9420
-  // Horizontal blvds: y:880-940, 1178-1248, 1520-1575, 1820-1865
-  // BX blocks (gap from road edge): BX1:7778/264  BX2:8103/269  BX3:8433/269
-  //                                  BX4:8763/269  BX5:9093/269  BX6:9428/392
-
-  // Row 1 — North of upper blvd (y:630, h:232 → ends at 862 < road y:880)
+  // Row 1 — North of upper blvd (y:620–860)
   const NB1=[
-    [7778,630,120,232],[7918,630,122,218],  // BX1
-    [8103,630,125,238],[8248,630,122,222],  // BX2
-    [8433,630,132,228],[8575,630,118,242],  // BX3
-    [8763,630,128,235],[8901,630,130,218],  // BX4
-    [9093,630,122,240],[9225,630,126,225],  // BX5
-    [9428,630,188,235],[9626,630,186,222],  // BX6
+    [7780,640,120,220],[7930,640,95,200],[8055,640,140,215],[8225,640,105,195],
+    [8360,640,130,210],[8520,640,110,185],[8660,640,145,220],[8830,640,100,195],
+    [8960,640,125,205],[9115,640,140,185],[9285,640,105,215],[9420,640,95,200],
+    [9545,640,135,220],[9710,640,110,195],[9850,640,120,205],
   ];
-  // Row 2 — Between upper blvd and center road (y:948, h:212 → ends at 1160 < road y:1178)
+  // Row 2 — Between upper blvd and center road (y:960–1155)
   const NB2=[
-    [7778,948,120,205],[7918,948,122,192],
-    [8103,948,125,210],[8248,948,122,198],
-    [8433,948,132,200],[8575,948,118,212],
-    [8763,948,128,208],[8901,948,130,195],
-    [9093,948,122,205],[9225,948,126,210],
-    [9428,948,188,208],[9626,948,186,198],
+    [7780,960,110,195],[7920,960,130,185],[8070,960,100,170],[8200,960,125,195],
+    [8355,960,115,185],[8500,960,130,170],[8660,960,105,195],[8795,960,120,185],
+    [8945,960,130,170],[9095,960,110,195],[9245,960,125,185],[9395,960,100,170],
+    [9525,960,130,195],[9685,960,115,185],[9830,960,120,170],
   ];
-  // Row 3 — Between center road and lower blvd (y:1256, h:248 → ends at 1504 < road y:1520)
+  // Row 3 — Between center road and lower blvd (y:1268–1500)
   const NB3=[
-    [7778,1256,120,242],[7918,1256,122,228],
-    [8103,1256,125,248],[8248,1256,122,232],
-    [8433,1256,132,238],[8575,1256,118,252],
-    [8763,1256,128,248],[8901,1256,130,232],
-    [9093,1256,122,242],[9225,1256,126,252],
-    [9428,1256,188,248],[9626,1256,186,232],
+    [7780,1270,115,230],[7925,1270,130,215],[8075,1270,105,200],[8210,1270,120,230],
+    [8360,1270,130,215],[8520,1270,110,200],[8660,1270,125,230],[8815,1270,115,215],
+    [8960,1270,130,200],[9115,1270,110,230],[9265,1270,125,215],[9415,1270,100,200],
+    [9545,1270,130,230],[9705,1270,115,215],[9850,1270,120,200],
   ];
-  // Row 4 — South of lower blvd (y:1583, h:218 → ends at 1801 < road y:1820)
+  // Row 4 — South of lower blvd (y:1600–1800)
   const NB4=[
-    [7778,1583,120,215],[7918,1583,122,202],
-    [8103,1583,125,218],[8248,1583,122,205],
-    [8433,1583,132,210],[8575,1583,118,218],
-    [8763,1583,128,218],[8901,1583,130,205],
-    [9093,1583,122,212],[9225,1583,126,218],
-    [9428,1583,188,218],[9626,1583,186,208],
+    [7780,1600,105,180],[7915,1600,120,165],[8060,1600,130,180],[8220,1600,110,165],
+    [8360,1600,125,180],[8515,1600,100,165],[8645,1600,130,180],[8805,1600,115,165],
+    [8950,1600,120,180],[9100,1600,130,165],[9260,1600,105,180],[9395,1600,120,165],
+    [9545,1600,130,180],[9705,1600,110,165],[9845,1600,120,180],
   ];
 
   [...NB1,...NB2,...NB3,...NB4].forEach((b,i)=>{
@@ -1249,7 +1236,7 @@ function spawnAI(){
   const CL=window.HW_CENTERLINE||[];
   for(let i=0;i<Math.min(cnt-5,14);i++){
     const type=i%5===0?'truck':i%7===6?'bike':'sedan';
-    const laneOff=i%2===0?-42:42; // tight lane for curves
+    const laneOff=i%2===0?-75:75; // top lane vs bottom lane
     // Start at staggered waypoints along centerline
     const startWpi=Math.floor(i*1.2)%Math.max(CL.length,1);
     const sp=CL[startWpi]||{x:2120+i*325,y:1200};
@@ -1291,13 +1278,16 @@ function runLoad(){
   const lf=document.getElementById('lf'),lp=document.getElementById('lp'),ls=document.getElementById('lstat');
   const steps=[[12,'INIT ENGINE'],[28,'BUILD ROADS'],[45,'SPAWN TRAFFIC'],[60,'LOAD TEXTURES'],[75,'INIT SHADERS'],[90,'SETUP AUDIO'],[100,'READY!']];
   let si=0;
-  const iv=setInterval(()=>{
-    if(si>=steps.length){clearInterval(iv);setTimeout(showMenu,500);return;}
+  // Stagger: each step waits for previous transition to finish
+  function nextStep(){
+    if(si>=steps.length){setTimeout(showMenu,400);return;}
     lf.style.width=steps[si][0]+'%';
     lp.textContent=steps[si][0]+'%';
     ls.textContent=steps[si][1]+'...';
     si++;
-  },250);
+    setTimeout(nextStep, si===1?300:380);
+  }
+  setTimeout(nextStep,80);
 }
 
 // ── UI ──
@@ -1391,7 +1381,7 @@ function startGame(){
   P.cfg=CARS[selCar]; P.col=P.cfg.col; P.body=P.cfg.body;
   P.w=P.cfg.w; P.h=P.cfg.h;
   P.x=600;P.y=1210;P.a=0;P.vx=0;P.vy=0;P.spd=0;
-  P.boost=1;P.bcd=0;P.boosting=false;P.nosActive=false;P._bsPrev=false;P.trail=[];P.skid=false;
+  P.boost=1;P.bcd=0;P.boosting=false;P.trail=[];P.skid=false;
   buildWorld();
   applyLayout();
   setupCtrl();
@@ -1725,22 +1715,12 @@ function updateP(dt){
   const bs=K['ShiftLeft']||K['ShiftRight']||K['BS'];
 
   // ── NOS: works independently — BS alone also accelerates ──
-  // NOS: one-click toggle, 2X speed, 6s drain, 3s recharge, brake cancels
-  if(bs && !P._bsPrev && P.boost>0 && P.bcd<=0) P.nosActive=!P.nosActive;
-  P._bsPrev=bs;
-  if(br) P.nosActive=false;
-  if(P.nosActive && P.boost>0 && P.bcd<=0){
-    P.boosting=true;
-    P.boost=Math.max(0, P.boost-dt*(1/6));
-    if(P.boost<=0){ P.nosActive=false; P.boosting=false; P.bcd=3; }
-  } else {
-    P.boosting=false;
-    if(!P.nosActive) P.boost=Math.min(1, P.boost+dt*(1/3));
-    if(P.boost<=0) P.bcd=3;
-  }
-  if(P.bcd>0) P.bcd-=dt;
-  const bm=P.boosting?2.0:1;
-  const acEff=ac||P.boosting;
+  if(bs&&P.boost>0&&P.bcd<=0){P.boosting=true;P.boost=Math.max(0,P.boost-dt*.65);}
+  else{P.boosting=false;if(!bs)P.boost=Math.min(1,P.boost+dt*.22);if(P.boost<=0)P.bcd=3.2;}
+  if(P.bcd>0)P.bcd-=dt;
+  const bm=P.boosting?c.bm:1;
+  // NOS counts as acceleration — so car moves with NOS even without Acc
+  const acEff = ac || (bs && P.boost>0 && P.bcd<=0);
 
   if(acEff){
     const spdRatio=Math.min(1,Math.abs(P.spd)/(mspd*bm));
@@ -2192,9 +2172,9 @@ function startRace(){
       x:GRID_X + aiSlots[i].dx,
       y:GRID_Y + aiSlots[i].dy,
       a:Math.PI/2, spd:0,
-      ts:(1.8+Math.random()*1.0)*1.2,
+      ts:1.8+Math.random()*1.0,
       col:['#FF2D55','#00C8FF','#FFD700','#00FF9D','#FF6B00'][i],
-      w:16,h:30,fin:false,ci:0,nos:1,nosCd:0,nosOn:false
+      w:16,h:30,fin:false,ci:0
     });
   }
   // Straight checkpoints along highway centerline
@@ -2230,9 +2210,6 @@ function updateRace(dt){
       playBp(880,.35,'square',.12);
       setTimeout(()=>el.style.display='none',1400);
     }
-    // Block all input during countdown
-    P.spd=0;P.vx=0;P.vy=0;P.nosActive=false;
-    Object.keys(K).forEach(k=>K[k]=false);
     return;
   }
   if(m.fin)return;
@@ -2268,20 +2245,11 @@ function updateRace(dt){
   let ah=0;
   RACEAI.forEach(ai=>{
     if(ai.fin)return;
+    // Rubber-band: if player is ahead, AI speeds up slightly
     const playerCpDist=m.ci*1000+(P.x-m.cps[Math.min(m.ci,m.cps.length-1)].x);
     const aiCpDist=ai.ci*1000+(ai.x-m.cps[Math.min(ai.ci,m.cps.length-1)].x);
     const rb=playerCpDist>aiCpDist+800?1.22:(playerCpDist<aiCpDist-800?.82:1);
-    // AI NOS: activates when player 400+ ahead, 2X speed, 6s on / 3s recharge
-    if(ai.nosCd>0) ai.nosCd-=dt;
-    if(!ai.nosOn && ai.nos>0 && ai.nosCd<=0 && playerCpDist>aiCpDist+400) ai.nosOn=true;
-    if(ai.nosOn){
-      ai.nos=Math.max(0,ai.nos-dt*(1/6));
-      if(ai.nos<=0){ai.nosOn=false;ai.nosCd=3;ai.nos=0;}
-    } else {
-      ai.nos=Math.min(1,ai.nos+dt*(1/3));
-    }
-    const aiNos=ai.nosOn?2.0:1;
-    ai.spd=ai.ts*rb*aiNos;
+    ai.spd=ai.ts*rb;
     const lastCp=m.cps.length-1;
     if(ai.ci<=lastCp){
       const cp2=m.cps[ai.ci],dx=cp2.x-ai.x,dy=cp2.y-ai.y,d=Math.hypot(dx,dy);
