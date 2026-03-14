@@ -8,11 +8,18 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #000; overflow: hidden; font-family: 'Arial Black', sans-serif; }
-  canvas { display: block; }
+  canvas {
+    display: block;
+    position: fixed !important;
+    top: 0; left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 1;
+  }
   
   #hud {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; z-index: 10;
+    pointer-events: none; z-index: 15;
   }
   
   /* Top Right Stats */
@@ -388,7 +395,7 @@
 <div id="title-screen">
   <h1>STREET LEGENDS</h1>
   <p>Open World Crime Game</p>
-  <button id="start-btn" onclick="startGame()">PLAY NOW</button>
+  <button id="start-btn" onclick="startGame()" ontouchstart="startGame()">PLAY NOW</button>
   <div id="subtitle" style="font-size:12px;color:rgba(255,136,0,0.4);margin-top:10px;letter-spacing:4px;">Touch or Click to enter the city</div>
 </div>
 
@@ -501,7 +508,7 @@ let minimapCtx;
 let frameCount = 0;
 
 // ===== MOBILE TOUCH STATE =====
-const isMobile = /Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent) || ('ontouchstart' in window);
+const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 let joystickActive = false;
 let joystickTouchId = null;
 let joystickOrigin = { x: 0, y: 0 };
@@ -527,15 +534,18 @@ function init() {
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
   
   // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance' });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ReinhardToneMapping;
-  renderer.toneMappingExposure = 1.2;
-  document.body.appendChild(renderer.domElement);
+  renderer.shadowMap.enabled = !isMobile; // disable shadows on mobile for performance
+  if (!isMobile) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+  try { renderer.outputEncoding = THREE.sRGBEncoding; } catch(e) {}
+  try { renderer.toneMapping = THREE.ReinhardToneMapping; renderer.toneMappingExposure = 1.2; } catch(e) {}
+  renderer.domElement.style.position = 'fixed';
+  renderer.domElement.style.top = '0';
+  renderer.domElement.style.left = '0';
+  renderer.domElement.style.zIndex = '1';
+  document.body.insertBefore(renderer.domElement, document.body.firstChild);
   
   clock = new THREE.Clock();
   
@@ -1123,18 +1133,21 @@ function setupControls() {
 }
 
 function setupMobileControls() {
-  document.getElementById('mobile-controls').style.display = 'block';
+  const mc = document.getElementById('mobile-controls');
+  mc.style.display = 'block';
   document.getElementById('controls-info').style.display = 'none';
   document.getElementById('crosshair').style.display = 'none';
-  
-  const joystickZone = document.getElementById('joystick-zone');
+
+  const joystickBase = document.getElementById('joystick-base');
   const joystickKnob = document.getElementById('joystick-knob');
-  const lookZone = document.getElementById('look-zone');
-  const BASE_R = 56; // max knob travel radius
+  const lookZone    = document.getElementById('look-zone');
+  const BASE_R = 52;
 
   // ---- JOYSTICK ----
+  const joystickZone = document.getElementById('joystick-zone');
+
   joystickZone.addEventListener('touchstart', e => {
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
     const t = e.changedTouches[0];
     joystickTouchId = t.identifier;
     joystickActive = true;
@@ -1144,7 +1157,7 @@ function setupMobileControls() {
   }, { passive: false });
 
   joystickZone.addEventListener('touchmove', e => {
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
     for (let t of e.changedTouches) {
       if (t.identifier !== joystickTouchId) continue;
       let dx = t.clientX - joystickOrigin.x;
@@ -1159,19 +1172,20 @@ function setupMobileControls() {
   }, { passive: false });
 
   const joystickEnd = e => {
+    e.preventDefault();
     for (let t of e.changedTouches) {
       if (t.identifier === joystickTouchId) {
-        joystickActive = false;
-        joystickTouchId = null;
+        joystickActive = false; joystickTouchId = null;
         joystickDelta.x = 0; joystickDelta.y = 0;
-        joystickKnob.style.left = '42px'; joystickKnob.style.top = '42px';
+        joystickKnob.style.left = '42px';
+        joystickKnob.style.top  = '42px';
       }
     }
   };
-  joystickZone.addEventListener('touchend', joystickEnd, { passive: false });
+  joystickZone.addEventListener('touchend',    joystickEnd, { passive: false });
   joystickZone.addEventListener('touchcancel', joystickEnd, { passive: false });
 
-  // ---- CAMERA LOOK (right half swipe) ----
+  // ---- LOOK ZONE ----
   lookZone.addEventListener('touchstart', e => {
     e.preventDefault();
     for (let t of e.changedTouches) {
@@ -1191,19 +1205,20 @@ function setupMobileControls() {
       const dy = t.clientY - lookLastPos.y;
       lookLastPos.x = t.clientX;
       lookLastPos.y = t.clientY;
-      const sensitivity = 0.004;
-      yawObject.rotation.y   -= dx * sensitivity;
-      pitchObject.rotation.x -= dy * sensitivity;
-      pitchObject.rotation.x = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitchObject.rotation.x));
+      const sens = 0.005;
+      if (yawObject) {
+        yawObject.rotation.y   -= dx * sens;
+        pitchObject.rotation.x -= dy * sens;
+        pitchObject.rotation.x = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitchObject.rotation.x));
+      }
     }
   }, { passive: false });
 
   const lookEnd = e => {
-    for (let t of e.changedTouches) {
-      if (t.identifier === lookTouchId) lookTouchId = null;
-    }
+    e.preventDefault();
+    for (let t of e.changedTouches) if (t.identifier === lookTouchId) lookTouchId = null;
   };
-  lookZone.addEventListener('touchend', lookEnd, { passive: false });
+  lookZone.addEventListener('touchend',    lookEnd, { passive: false });
   lookZone.addEventListener('touchcancel', lookEnd, { passive: false });
 }
 
@@ -2086,25 +2101,28 @@ function animate() {
 function startGame() {
   document.getElementById('title-screen').style.display = 'none';
   document.getElementById('hud').style.display = 'block';
-  
-  init();
+
+  // Show mobile controls immediately if touch device
+  if (isMobile) {
+    document.getElementById('mobile-controls').style.display = 'block';
+    document.getElementById('controls-info').style.display = 'none';
+  }
+
+  init(); // builds scene + calls setupControls which calls setupMobileControls again (safe)
   initAudio();
-  
+
   gameRunning = true;
-  
+
   if (!isMobile) {
     renderer.domElement.requestPointerLock();
   }
-  
-  // Welcome message
-  setTimeout(() => showNotification('WELCOME TO STREET LEGENDS'), 1000);
-  if (isMobile) {
-    setTimeout(() => showNotification('LEFT STICK = MOVE | SWIPE RIGHT = LOOK'), 2200);
-  } else {
-    setTimeout(() => showNotification('CLICK TO LOCK MOUSE'), 2500);
-  }
-  
-  // Give starter money
+
+  setTimeout(() => showNotification('WELCOME TO STREET LEGENDS'), 800);
+  setTimeout(() => {
+    if (isMobile) showNotification('LEFT STICK=MOVE | SWIPE RIGHT=LOOK');
+    else showNotification('CLICK TO LOCK MOUSE');
+  }, 2000);
+
   money = 500;
   updateMoneyHUD();
 }
